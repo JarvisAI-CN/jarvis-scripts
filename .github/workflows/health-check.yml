@@ -1,0 +1,71 @@
+name: Script Health Check
+
+on:
+  push:
+    branches: [ master, main ]
+  pull_request:
+    branches: [ master, main ]
+  schedule:
+    # 每天UTC 00:00运行（北京时间08:00）
+    - cron: '0 0 * * *'
+
+jobs:
+  shellcheck:
+    name: ShellCheck Analysis
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Run ShellCheck
+        uses: workflow/shellcheck@master
+        with:
+          severity: warning
+          check-together: 'yes'
+      
+  backup-test:
+    name: Test Backup Script
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Check backup.sh syntax
+        run: |
+          if [ -f "backup.sh" ]; then
+            bash -n backup.sh
+            echo "✅ backup.sh syntax OK"
+          fi
+      
+      - name: Check update_readme.sh syntax
+        run: |
+          if [ -f "update_readme.sh" ]; then
+            bash -n update_readme.sh
+            echo "✅ update_readme.sh syntax OK"
+          fi
+      
+      - name: Check other scripts
+        run: |
+          for script in *.sh; do
+            if [ -f "$script" ]; then
+              bash -n "$script" && echo "✅ $script syntax OK" || echo "❌ $script has errors"
+            fi
+          done
+
+  stats:
+    name: Project Statistics
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Count lines of code
+        run: |
+          echo "## 项目统计" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- 脚本数量: $(ls -1 *.sh 2>/dev/null | wc -l)" >> $GITHUB_STEP_SUMMARY
+          echo "- 总行数: $(find . -name '*.sh' -exec cat {} \; | wc -l)" >> $GITHUB_STEP_SUMMARY
+          echo "- 文档数量: $(ls -1 *.md 2>/dev/null | wc -l)" >> $GITHUB_STEP_SUMMARY
