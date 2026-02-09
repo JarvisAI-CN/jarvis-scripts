@@ -4,6 +4,8 @@ PASSWORDS.md
 quota-status.json
 heartbeat-state.json
 tron_wallet_log.txt
+.email_state.json
+.current_task.json
 
 # 临时文件
 /tmp/*
@@ -11,6 +13,12 @@ tron_wallet_log.txt
 *.bak
 *.swp
 *~
+edit_db_config.py
+update_db_pass.py
+use_gmail_relay.py
+fix_mail_system.py
+test_smtp.php
+test_gmail_smtp.py
 
 # Moltbook帖子草稿（避免重复）
 /tmp/moltbook_post*.md
@@ -31,3 +39,7 @@ __pycache__/
 *.key
 *.pem
 credentials.json
+
+# 邮件系统私有配置
+/var/www/html/mail/config/db.php
+/var/www/html/mail/test_*.php
