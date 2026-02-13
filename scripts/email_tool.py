@@ -20,16 +20,16 @@ import os
 # 邮箱配置
 EMAIL_CONFIG = {
     "imap": {
-        "host": "outlook.office365.com",
+        "host": "imap.email.cn",
         "port": 993,
-        "user": "jarvis-cn-ai@outlook.com",
-        "password": "cqgsgyomulsfjmfs"  # ✅ 使用应用专用密码（2026-02-09创建）
+        "user": "jarvis.openclaw@email.cn",
+        "password": "wjhwJyeGudeCRk2e"  # 应用专用密码
     },
     "smtp": {
-        "host": "smtp.office365.com",
-        "port": 587,
-        "user": "jarvis-cn-ai@outlook.com",
-        "password": "cqgsgyomulsfjmfs"  # ✅ 使用应用专用密码（2026-02-09创建）
+        "host": "smtp.email.cn",
+        "port": 465,
+        "user": "jarvis.openclaw@email.cn",
+        "password": "wjhwJyeGudeCRk2e"  # 应用专用密码
     }
 }
 
@@ -53,8 +53,8 @@ class OutlookEmail:
     def connect_smtp(self):
         """连接SMTP服务器"""
         try:
-            self.smtp = smtplib.SMTP(EMAIL_CONFIG["smtp"]["host"], EMAIL_CONFIG["smtp"]["port"])
-            self.smtp.starttls()
+            # Use SSL directly for port 465
+            self.smtp = smtplib.SMTP_SSL(EMAIL_CONFIG["smtp"]["host"], EMAIL_CONFIG["smtp"]["port"])
             self.smtp.login(EMAIL_CONFIG["smtp"]["user"], EMAIL_CONFIG["smtp"]["password"])
             return True
         except Exception as e:
@@ -69,11 +69,13 @@ class OutlookEmail:
                 self.imap.logout()
             except:
                 pass
+            self.imap = None
         if self.smtp:
             try:
                 self.smtp.quit()
             except:
                 pass
+            self.smtp = None
 
     def decode_header(self, header):
         """解码邮件头"""
@@ -128,9 +130,9 @@ class OutlookEmail:
             "body": body
         }
 
-    def list_folders(self):
+    def list_folders(self, stay_connected=False):
         """列出所有文件夹"""
-        if not self.connect_imap():
+        if not self.imap and not self.connect_imap():
             return []
         
         try:
@@ -147,7 +149,8 @@ class OutlookEmail:
             print(f"❌ 列出文件夹失败: {e}")
             return []
         finally:
-            self.disconnect()
+            if not stay_connected:
+                self.disconnect()
 
     def get_unread_emails(self, folder="INBOX", limit=10):
         """获取未读邮件"""
@@ -155,7 +158,7 @@ class OutlookEmail:
             return []
         
         try:
-            self.imap.select(folder)
+            self.imap.select(f'"{folder}"')
             result, data = self.imap.search(None, "UNSEEN")
             
             if result != "OK":
@@ -169,7 +172,7 @@ class OutlookEmail:
             for eid in email_ids:
                 result, data = self.imap.fetch(eid, '(RFC822)')
                 if result == "OK":
-                    email_data = self.parse_email(data)
+                    email_data = self.parse_email(data[0])
                     email_data["id"] = eid.decode()
                     emails.append(email_data)
             
@@ -186,7 +189,7 @@ class OutlookEmail:
             return []
         
         try:
-            self.imap.select(folder)
+            self.imap.select(f'"{folder}"')
             result, data = self.imap.search(None, "ALL")
             
             if result != "OK":
@@ -200,7 +203,7 @@ class OutlookEmail:
             for eid in reversed(email_ids):
                 result, data = self.imap.fetch(eid, '(RFC822)')
                 if result == "OK":
-                    email_data = self.parse_email(data)
+                    email_data = self.parse_email(data[0])
                     email_data["id"] = eid.decode()
                     emails.append(email_data)
             
@@ -217,7 +220,7 @@ class OutlookEmail:
             return []
         
         try:
-            self.imap.select(folder)
+            self.imap.select(f'"{folder}"')
             result, data = self.imap.search(None, criteria)
             
             if result != "OK":
@@ -228,7 +231,7 @@ class OutlookEmail:
             for eid in email_ids:
                 result, data = self.imap.fetch(eid, '(RFC822)')
                 if result == "OK":
-                    email_data = self.parse_email(data)
+                    email_data = self.parse_email(data[0])
                     email_data["id"] = eid.decode()
                     emails.append(email_data)
             
@@ -270,7 +273,7 @@ class OutlookEmail:
             return False
         
         try:
-            self.imap.select(folder)
+            self.imap.select(f'"{folder}"')
             self.imap.store(email_id, '+FLAGS', '\\Seen')
             return True
         except Exception as e:
@@ -286,20 +289,23 @@ class OutlookEmail:
         
         try:
             stats = {}
-            folders = self.list_folders()
+            folders = self.list_folders(stay_connected=True)
             
             for folder in folders:
-                self.imap.select(folder)
-                result, data = self.imap.search(None, "ALL")
-                total = len(data[0].split())
-                
-                result, data = self.imap.search(None, "UNSEEN")
-                unread = len(data[0].split())
-                
-                stats[folder] = {
-                    "total": total,
-                    "unread": unread
-                }
+                try:
+                    self.imap.select(f'"{folder}"')
+                    result, data = self.imap.search(None, "ALL")
+                    total = len(data[0].split())
+                    
+                    result, data = self.imap.search(None, "UNSEEN")
+                    unread = len(data[0].split())
+                    
+                    stats[folder] = {
+                        "total": total,
+                        "unread": unread
+                    }
+                except Exception as e:
+                    print(f"⚠️ 处理文件夹 {folder} 失败: {e}")
             
             return stats
         except Exception as e:

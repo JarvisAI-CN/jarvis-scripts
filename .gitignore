@@ -1,18 +1,39 @@
-# 敏感信息
+# 敏感文件
 PASSWORDS.md
-*.log
 quota-status.json
 heartbeat-state.json
 tron_wallet_log.txt
 .email_state.json
 .current_task.json
+.api_health_alert.json
+.api_health_state.json
 
-# 临时文件
+# 临时与日志文件
 /tmp/*
-*.tmp
+*.log
+/logs/*
+ruanjian/
+RuAnJian/
+"Ru An Jian"/
+memory/archives/
+
+# 系统生成的标记
+/tmp/nightly-learning/
+
+# 其他垃圾文件
 *.bak
 *.swp
 *~
+.clawhub/
+__pycache__/
+*.key
+*.pem
+credentials.json
+screenshot_*.png
+vnc_*.png
+*.png
+
+# 自动同步排除的文件 (包含私密配置的脚本)
 edit_db_config.py
 update_db_pass.py
 use_gmail_relay.py
@@ -20,26 +41,12 @@ fix_mail_system.py
 test_smtp.php
 test_gmail_smtp.py
 
-# Moltbook帖子草稿（避免重复）
-/tmp/moltbook_post*.md
-moltbook_auto_publish.log
-
-# 系统文件
-.DS_Store
-Thumbs.db
-*.pyc
-__pycache__/
-
-# IDE和编辑器
-.vscode/
-.idea/
-*.sublime-*
-
-# 密钥和token
-*.key
-*.pem
-credentials.json
-
 # 邮件系统私有配置
 /var/www/html/mail/config/db.php
 /var/www/html/mail/test_*.php
+/PARA/Projects/dhmip-mail-system/config/db.php
+
+# 开发冗余
+node_modules/
+.git/
+.obsidian/
