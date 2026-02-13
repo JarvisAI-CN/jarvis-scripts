@@ -1,0 +1,29 @@
+[
+  {
+    "title": "Midjourney - 顶尖 AI 绘画与艺术生成平台",
+    "url": "https://www.midjourney.com",
+    "category_id": "27",
+    "description": "目前全球公认生成质量最高的 AI 绘画工具，通过 Discord 社区驱动创作。",
+    "tags": "Midjourney, AI绘画, 艺术生成, AIGC",
+    "keywords": "Midjourney, AI绘画, 数字艺术, 图像生成, 创意工具",
+    "content": "<h2>顶尖 AI 绘画艺术生成平台</h2><p>Midjourney 是一款运行在 Discord 上的强大 AI 图像生成工具。它以极高的艺术感和逼真的光影处理著称，是目前创意行业最受推崇的 AIGC 工具之一。</p><h3>核心功能</h3><p><strong>文本生成图像</strong>：只需输入一段描述性的文字（Prompt），即可在几分钟内生成四张高保质的艺术图像。<strong>风格迁移与融合</strong>：支持参考图输入，能够完美融合不同艺术风格。<strong>强力扩图与缩放</strong>：提供 Zoom Out 和 Vary Region 功能，方便用户对细节进行微调。</p><h3>适用人群</h3><p>插画师、设计师、游戏原画师以及任何对 AI 艺术创作感兴趣的爱好者。</p>"
+  },
+  {
+    "title": "Suno AI - 零门槛 AI 音乐与歌曲创作平台",
+    "url": "https://suno.com",
+    "category_id": "29",
+    "description": "只需一句话，即可生成包含人声、旋律与编曲的完整歌曲。",
+    "tags": "Suno, AI音乐, 作曲工具, 歌曲生成",
+    "keywords": "Suno, AI音频, 自动作曲, 音乐创作, AI歌词",
+    "content": "<h2>零门槛 AI 音乐创作平台</h2><p>Suno AI 是目前音乐生成领域的领跑者。它不仅能生成伴奏，还能根据歌词生成极具感染力的人声，支持多种曲风和语言。</p><h3>核心功能</h3><p><strong>全自动歌曲生成</strong>：输入主题或歌词，自动生成 2 分钟左右的完整歌曲。<strong>自定义模式</strong>：精准控制曲风（如流行、爵士、摇滚）和音色。<strong>音频扩展</strong>：支持对生成的片段进行无限延长。</p><h3>适用人群</h3><p>音乐爱好者、短视频创作者、内容博主及业余音乐人。</p>"
+  },
+  {
+    "title": "Runway Gen-3 - 专业级 AI 视频生成与处理工具",
+    "url": "https://runwayml.com",
+    "category_id": "28",
+    "description": "电影级 AI 视频生成平台，支持文生视频、图生视频及专业后期处理。",
+    "tags": "Runway, AI视频, 视频生成, 影视后期",
+    "keywords": "Runway Gen-3, AI摄像机, 视频特效, 自动抠图, 文生视频",
+    "content": "<h2>专业级 AI 视频生成平台</h2><p>Runway 是 AI 视频领域的先驱，其最新的 Gen-3 Alpha 模型能够生成极具真实感和物理反馈的动态视频，是专业影视工作者的得力助手。</p><h3>核心功能</h3><p><strong>文/图生视频</strong>：提供极高的一致性和动作流畅度。<strong>动态画笔</strong>：精准控制图像中特定区域的运动轨迹。<strong>专业后期工具</strong>：包含自动擦除、慢动作处理及颜色分级。</p><h3>适用人群</h3><p>导演、剪辑师、广告制作人及数字艺术家。</p>"
+  }
+]

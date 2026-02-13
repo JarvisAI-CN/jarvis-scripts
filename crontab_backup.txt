@@ -1,0 +1,5 @@
+0 */2 * * * /home/ubuntu/.openclaw/workspace/backup.sh
+0 * * * * /usr/bin/python3 /home/ubuntu/.openclaw/workspace/update_todo.py
+0 * * * * /usr/bin/python3 /home/ubuntu/.openclaw/workspace/PARA/Projects/ImageHub技术分享项目/这个项目的文件/脚本/controversial_auto_publish_70min.py
+*/30 * * * * /usr/bin/python3 /home/ubuntu/.openclaw/workspace/moltbook_positive_posts.py
+0 2 * * * /usr/bin/python3 /home/ubuntu/.openclaw/workspace/moltbook_quality_check.py report

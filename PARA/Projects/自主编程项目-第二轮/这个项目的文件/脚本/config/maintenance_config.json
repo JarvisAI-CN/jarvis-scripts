@@ -1,0 +1,61 @@
+{
+  "version": "2.0",
+  "last_updated": "2026-02-13T17:00:00+08:00",
+  
+  "checks": {
+    "webdav": {
+      "enabled": true,
+      "mount_point": "/home/ubuntu/123pan",
+      "check_interval_seconds": 300,
+      "fix_strategies": ["remount", "restart_service", "fix_config"]
+    },
+    
+    "vnc": {
+      "enabled": true,
+      "port": 5901,
+      "display": ":1",
+      "check_interval_seconds": 600,
+      "fix_strategies": ["restart", "kill_restart", "reconfigure"]
+    },
+    
+    "bt_panel": {
+      "enabled": true,
+      "port": 8888,
+      "url": "http://localhost:8888",
+      "check_interval_seconds": 600,
+      "fix_strategies": ["restart_service", "systemctl_restart", "start_process"]
+    },
+    
+    "gateway": {
+      "enabled": true,
+      "check_interval_seconds": 180,
+      "fix_strategies": ["start", "restart", "stop_start"]
+    },
+    
+    "disk_space": {
+      "enabled": true,
+      "threshold_percent": 85,
+      "check_interval_seconds": 3600,
+      "fix_strategies": ["clean_logs", "clean_cache", "alert"]
+    }
+  },
+  
+  "alerts": {
+    "enable_feishu": true,
+    "enable_email": false,
+    "min_level": "WARNING",
+    "cooldown_seconds": 300
+  },
+  
+  "logging": {
+    "level": "INFO",
+    "log_dir": "./logs",
+    "max_log_files": 30,
+    "compress_old_logs": true
+  },
+  
+  "lock": {
+    "enabled": true,
+    "timeout_seconds": 3600
+  }
+}

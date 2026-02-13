@@ -1,0 +1,191 @@
+[
+  {
+    "title": "Midjourney - 顶尖 AI 绘画与艺术生成平台",
+    "url": "https://www.midjourney.com",
+    "category_id": "绘画平台",
+    "description": "目前全球公认生成质量最高的 AI 绘画工具，通过 Discord 社区驱动创作，以惊人的艺术感和细节表现力著称。",
+    "tags": "Midjourney, AI绘画, 艺术生成, AIGC, 图像生成",
+    "keywords": "Midjourney, AI绘画, 数字艺术, 图像生成, 创意工具, 提示词, Discord",
+    "content": "<h2>顶尖 AI 绘画艺术生成平台</h2><p>Midjourney 是一款运行在 Discord 上的强大 AI 图像生成工具。它以极高的艺术感和逼真的光影处理著称，是目前创意行业最受推崇的 AIGC 工具之一。</p><h3>核心功能</h3><p><strong>文本生成图像</strong>：只需输入一段描述性的文字（Prompt），即可在几分钟内生成四张高质量的艺术图像。<strong>风格迁移与融合</strong>：支持参考图输入，能够完美融合不同艺术风格，创造独特视觉效果。<strong>强力扩图与缩放</strong>：提供 Zoom Out、Vary Region 和 Pan 功能，方便用户对细节进行微调和扩展。<strong>版本迭代</strong>：持续更新的 V6、V7 模型，在照片级真实感和艺术表现力上不断突破。</p><h3>产品亮点</h3><p><em>卓越的艺术性</em>：生成的图像具有独特的艺术美感，非其他工具可比。<em>强大的社区</em>：Discord 上数百万用户共享创意和提示词技巧。<em>持续进化</em>：每周更新，功能日益强大。</p><h3>适用人群</h3><p>插画师、平面设计师、游戏原画师、营销创意人员以及任何对 AI 艺术创作感兴趣的爱好者。</p>"
+  },
+  {
+    "title": "Stability AI - Stable Diffusion 开源图像生成生态",
+    "url": "https://stability.ai",
+    "category_id": "绘画平台",
+    "description": "开源 AI 绘画领域的领导者，提供 Stable Diffusion 模型及完整的创作工具链。",
+    "tags": "Stable Diffusion, AI绘画, 开源, 图像生成",
+    "keywords": "Stable Diffusion, Stability AI, 开源AI, 本地部署, LoRA, ControlNet",
+    "content": "<h2>开源 AI 绘画生态领导者</h2><p>Stability AI 是 Stable Diffusion 的开发公司，致力于开放 AI 技术。Stable Diffusion 是目前最强大的开源图像生成模型，拥有庞大的插件和模型生态。</p><h3>核心功能</h3><p><strong>本地部署</strong>：可在本地电脑运行，保护隐私且无使用限制。<strong>丰富插件</strong>：ControlNet、LoRA、ADetailer 等插件实现精准控制。<strong>模型生态</strong>：海量第三方模型涵盖动漫、写实、设计等风格。<strong>SDXL 与 SD3</strong>：新一代模型在分辨率和质感上达到商业级水准。</p><h3>产品亮点</h3><p><em>完全免费</em>：开源免费，无订阅费用。<em>高度可控</em>：通过插件实现对构图、姿态、细节的精确控制。<em>社区活跃</em>：Civitai 等平台拥有海量模型资源。</p><h3>适用人群</h3><p>技术爱好者、独立开发者、需要高度定制化的设计师、预算有限的创作者。</p>"
+  },
+  {
+    "title": "DALL-E 3 - OpenAI 图像生成旗舰产品",
+    "url": "https://openai.com/dall-e-3",
+    "category_id": "绘画平台",
+    "description": "OpenAI 推出的顶级图像生成模型，以卓越的语言理解能力和细节还原著称。",
+    "tags": "DALL-E, OpenAI, AI绘画, 图像生成",
+    "keywords": "DALL-E 3, OpenAI, ChatGPT, 文生图, AI创作",
+    "content": "<h2>OpenAI 旗舰图像生成模型</h2><p>DALL-E 3 是 OpenAI 最新一代图像生成模型，与 ChatGPT 深度集成。它在理解复杂提示词和生成细节方面表现出色。</p><h3>核心功能</h3><p><strong>卓越的语言理解</strong>：能精准理解复杂、长段的提示词描述。<strong>ChatGPT 集成</strong>：直接在 ChatGPT 中生成图像，无缝协作。<strong>文字渲染</strong>：在图像中生成准确的文字（突破性功能）。<strong>安全可控</strong>：内置内容过滤，确保生成内容符合规范。</p><h3>产品亮点</h3><p><em>易用性极佳</em>：自然语言交互，无需学习复杂提示词。<em>质量稳定</em>：生成的图像质量一致性强。<em>生态整合</em>：与 Microsoft Copilot、Bing 等服务深度集成。</p><h3>适用人群</h3><p>ChatGPT 用户、企业用户、需要快速生成营销素材的营销人员、教育工作者。</p>"
+  },
+  {
+    "title": "Ideogram AI - 文字渲染专家",
+    "url": "https://ideogram.ai",
+    "category_id": "绘画平台",
+    "description": "专注于精准文字渲染的 AI 图像生成工具，是海报和标语创作的理想选择。",
+    "tags": "Ideogram, AI绘画, 文字渲染, 设计工具",
+    "keywords": "Ideogram, AI文字生成, 海报设计, 标语制作, 排版",
+    "content": "<h2>文字渲染专家级 AI 绘画工具</h2><p>Ideogram AI 是一款专注于文字渲染的图像生成工具，在生成包含文字的图像方面表现远超竞争对手，是海报、封面、社交媒体图片创作的利器。</p><h3>核心功能</h3><p><strong>精准文字生成</strong>：可准确生成英文、中文等多种文字。<strong>丰富的排版风格</strong>：支持多种字体、颜色、布局方案。<strong>Magic Prompt</strong>：自动优化提示词，提升生成质量。<strong>社区Remix</strong>：可基于他人作品进行二次创作。</p><h3>产品亮点</h3><p><em>文字准确率高</em>：解决了 AI 生成"乱码"的痛点。<em>适合商业用途</em>：直接生成可用于营销的视觉素材。<em>免费额度慷慨</em>：每天提供大量免费生成次数。</p><h3>适用人群</h3><p>社交媒体运营者、营销设计师、品牌策划人员、需要制作海报和小众设计的小企业主。</p>"
+  },
+  {
+    "title": "Runway Gen-3 - 专业级 AI 视频生成平台",
+    "url": "https://runwayml.com",
+    "category_id": "视频工具",
+    "description": "AI 视频生成领域的领跑者，提供电影级的文生视频、图生视频及后期处理工具。",
+    "tags": "Runway, AI视频, 视频生成, 影视后期",
+    "keywords": "Runway Gen-3, 文生视频, 图生视频, AI剪辑, 视频特效",
+    "content": "<h2>专业级 AI 视频生成平台</h2><p>Runway 是 AI 视频领域的先驱和领导者。其最新的 Gen-3 Alpha 模型能够生成极具真实感和物理准确性的动态视频，被众多影视公司和创作者采用。</p><h3>核心功能</h3><p><strong>文生视频</strong>：输入文字描述生成高质量视频片段。<strong>图生视频</strong>：让静态图片动起来，支持多种运动模式。<strong>Gen-3 Alpha</strong>：新一代模型在一致性、物理仿真、动作流畅度上达到新高度。<strong>视频后期工具</strong>：包括自动擦除、背景替换、绿幕抠图、慢动作、色彩分级等专业功能。</p><h3>产品亮点</h3><p><em>专业级质量</em>：生成的视频可直接用于商业项目。<em>网页端易用</em>：无需高性能硬件，浏览器即可使用。<em>好莱坞认可</em>：已被用于多部影视作品的制作。</p><h3>适用人群</h3><p>视频创作者、广告制作人、独立导演、剪辑师、数字艺术家、营销团队。</p>"
+  },
+  {
+    "title": "Pika Labs - 易用型 AI 视频生成工具",
+    "url": "https://pika.art",
+    "category_id": "视频工具",
+    "description": "通过 Discord 或网页即可使用的 AI 视频生成工具，以简单易用和创意效果著称。",
+    "tags": "Pika, AI视频, 动画生成, 创意工具",
+    "keywords": "Pika Labs, AI动画, 视频制作, 创意视频, Discord机器人",
+    "content": "<h2>创意无限的 AI 视频生成工具</h2><p>Pika Labs 是一款易于使用的 AI 视频生成工具，支持文字和图片生成视频。它在创意风格和动画效果方面表现出色，特别适合制作有趣的短视频内容。</p><h3>核心功能</h3><p><strong>文/图生视频</strong>：支持 3 秒视频生成，可延长至更长。<strong>风格化效果</strong>：提供动漫、3D 渲染、实拍等多种风格。<strong>相机控制</strong>：支持缩放、平移、旋转等运镜效果。<strong>局部修改</strong>：可修改视频中的特定区域。</p><h3>产品亮点</h3><p><em>上手简单</em>：Discord 机器人或网页端都可轻松使用。<em>创意风格丰富</em>：特别适合制作动画和创意内容。<em>免费可用</em>：提供慷慨的免费额度。</p><h3>适用人群</h3><p>短视频创作者（抖音、小红书、TikTok）、动画爱好者、内容营销人员、社交媒体运营者。</p>"
+  },
+  {
+    "title": "Luma Dream Machine - 超逼真 AI 视频生成",
+    "url": "https://lumalabs.ai/dream-machine",
+    "category_id": "视频工具",
+    "description": "生成超逼真视频的 AI 工具，在物理真实感和动作一致性方面表现卓越。",
+    "tags": "Luma, AI视频, 视频生成, 3D建模",
+    "keywords": "Luma Dream Machine, 超逼真视频, 物理仿真, 3D视频, AI电影",
+    "content": "<h2>超逼真 AI 视频生成平台</h2><p>Luma AI 的 Dream Machine 是一款专注于高度真实感的视频生成工具。它在物理准确性、动作流畅度和细节保持方面建立了新标准，生成的视频几乎无法区分是否由 AI 制作。</p><h3>核心功能</h3><p><strong>高保真视频生成</strong>：生成具有高度真实感的 5 秒视频片段。<strong>优秀的物理仿真</strong>：重力、光影、流体等物理效果自然逼真。<strong>图生视频</strong>：可基于图片生成动态视频，动作自然流畅。<strong>3D 场景理解</strong>：基于 Luma 在 3D 扫描领域的技术积累，空间理解能力出色。</p><h3>产品亮点</h3><p><em>真实感顶尖</em>：在所有视频生成工具中，真实度名列前茅。<em>动作一致性</em>：人物和物体的运动连贯自然，少有畸变。<em>快速生成</em>：生成速度快，适合快速迭代。</p><h3>适用人群</h3><p>追求高真实感的视频创作者、影视后期人员、产品展示制作、高端广告创意人员。</p>"
+  },
+  {
+    "title": "Haiper - 新一代 AI 视频生成平台",
+    "url": "https://haiper.ai",
+    "category_id": "视频工具",
+    "description": "由前 Google DeepMind 团队打造的 AI 视频生成工具，技术实力雄厚。",
+    "tags": "Haiper, AI视频, 视频生成, DeepMind",
+    "keywords": "Haiper, AI视频生成, 高清视频, 视频创作, 4K视频",
+    "content": "<h2>DeepMind 团队打造的 AI 视频平台</h2><p>Haiper 是由前 Google DeepMind 研究人员创立的 AI 视频生成平台。它采用独特的技术路线，在生成高质量、高分辨率视频方面表现出色。</p><h3>核心功能</h3><p><strong>高清视频生成</strong>：支持生成 1080p 甚至更高分辨率的视频。<strong>文生视频</strong>：对复杂场景的理解和还原能力强。<strong>图生视频</strong>：可让静态图片产生自然的动态效果。<strong>视频延长</strong>：支持对现有视频进行智能延长。</p><h3>产品亮点</h3><p><em>技术背景强大</em>：团队来自 DeepMind，技术底蕴深厚。<em>视频质量高</em>：在清晰度和稳定性方面表现优异。<em>发展迅速</em>：产品迭代快，功能不断丰富。</p><h3>适用人群</h3><p>视频创作者、科技爱好者、需要高质量视频生成的专业人士。</p>"
+  },
+  {
+    "title": "Suno AI - 零门槛 AI 音乐创作平台",
+    "url": "https://suno.com",
+    "category_id": "音频工具",
+    "description": "只需一句话即可生成包含人声、旋律与编曲的完整歌曲，音乐创作的革命性工具。",
+    "tags": "Suno, AI音乐, 作曲工具, 歌曲生成",
+    "keywords": "Suno, AI音乐生成, 自动作曲, 音乐创作, AI歌词, 人声合成",
+    "content": "<h2>零门槛 AI 音乐创作平台</h2><p>Suno AI 是音乐生成领域的现象级产品。它不仅能生成伴奏，还能根据歌词生成极具感染力的人声，支持多种曲风和语言，让任何人都能成为音乐创作者。</p><h3>核心功能</h3><p><strong>全自动歌曲生成</strong>：输入主题或歌词，自动生成 2-4 分钟的完整歌曲。<strong>自定义模式</strong>：可精准控制曲风（流行、爵士、摇滚、电子等）、情绪和乐器。<strong>歌词生成</strong>：内置强大的歌词创作能力。<strong>v4 与 v3 模型</strong>：新版本在人声自然度和音乐复杂性上大幅提升。</p><h3>产品亮点</h3><p><em>人声逼真</em>：生成的歌声几乎与真人无异。<em>上手零门槛</em>：无需音乐基础，任何人都能创作。<em>社区活跃</em>：大量用户分享创作，形成丰富音乐库。</p><h3>适用人群</h3><p>音乐爱好者、短视频创作者（BGM 制作）、内容博主、独立音乐人、播客制作者。</p>"
+  },
+  {
+    "title": "Udio - 专业级 AI 音乐生成工具",
+    "url": "https://www.udio.com",
+    "category_id": "音频工具",
+    "description": "由音乐产业专家打造的 AI 音乐平台，在音质和音乐性方面达到专业水准。",
+    "tags": "Udio, AI音乐, 音乐生成, 专业音频",
+    "keywords": "Udio, AI作曲, 高质量音乐, 音乐制作, 伴奏生成",
+    "content": "<h2>专业级 AI 音乐生成平台</h2><p>Udio 是由前 Google DeepMind 研究人员和音乐产业专家联合打造的 AI 音乐生成工具。它在音质、音乐性和专业控制方面表现出色，是严肃音乐创作者的理想选择。</p><h3>核心功能</h3><p><strong>高保真音质</strong>：生成的音乐音质达到专业制作水准。<strong>精细控制</strong>：可控制乐器编排、和声进行、节奏型等细节。<strong>多样化风格</strong>：涵盖古典、爵士、电子、嘻哈等几乎所有音乐类型。<strong>扩展与延长</strong>：可对生成的片段进行无缝延长。</p><h3>产品亮点</h3><p><em>音乐性强</em>：生成的音乐结构和和声更符合专业标准。<em>音质优异</em>：支持高比特率输出。<em>专业导向</em>：功能设计更贴近专业音乐制作流程。</p><h3>适用人群</h3><p>专业音乐人、音乐制作人、需要高质量原创音乐的影视创作者、广告音乐制作。</p>"
+  },
+  {
+    "title": "ElevenLabs - 顶级 AI 语音合成平台",
+    "url": "https://elevenlabs.io",
+    "category_id": "音频工具",
+    "description": "业界领先的 AI 语音合成和克隆工具，支持多语言和情感表达。",
+    "tags": "ElevenLabs, AI语音, TTS, 语音克隆",
+    "keywords": "ElevenLabs, AI配音, 文字转语音, 语音克隆, 有声书制作",
+    "content": "<h2>顶级 AI 语音合成与克隆平台</h2><p>ElevenLabs 是目前公认最优秀的 AI 语音合成平台。它的语音自然度、情感表达和多语言支持都处于行业领先地位，被广泛应用于配音、有声书、游戏等领域。</p><h3>核心功能</h3><p><strong>TTS 文字转语音</strong>：支持 29+ 种语言，语音极其自然。<strong>语音克隆</strong>：仅需少量音频样本即可克隆任何人声。<strong>语音设计</strong>：可调整语速、音调、稳定性等参数。<strong>Projects 工作室</strong>：适合长篇有声书和播客制作的完整工作流。<strong>Dubbing 配音</strong>：自动视频翻译和配音功能。</p><h3>产品亮点</h3><p><em>自然度极高</em>：语音几乎与真人无异。<em>情感丰富</em>：能表达喜怒哀乐等复杂情感。<em>多语言支持</em>：支持中文、英语、日语等主流语言。</p><h3>适用人群</h3><p>配音师、有声书创作者、游戏开发者、YouTuber、播客主、企业培训内容制作。</p>"
+  },
+  {
+    "title": "Perplexity AI - 新一代 AI 搜索引擎",
+    "url": "https://www.perplexity.ai",
+    "category_id": "AI搜索",
+    "description": "融合了搜索与 AI 对话的新一代搜索引擎，提供精准答案和来源引用。",
+    "tags": "Perplexity, AI搜索, 智能助手, 学术研究",
+    "keywords": "Perplexity, AI搜索引擎, 知识搜索, 学术搜索, AI问答",
+    "content": "<h2>新一代 AI 搜索引擎</h2><p>Perplexity AI 是搜索引擎的革命者。它不返回链接列表，而是直接给出答案，并标注来源。结合 GPT-4 和 Claude 等模型，它能理解复杂问题并提供准确、有据可查的回答。</p><h3>核心功能</h3><p><strong>智能问答</strong>：理解自然语言问题，直接给出答案。<strong>来源引用</strong>：每个答案都标注来源，确保信息可信。<strong>多模型选择</strong>：可选择 GPT-4、Claude-3 等不同底层模型。<strong>专业搜索</strong>：学术、写作、数学等专项模式。<strong>Pro 搜索</strong>：深度搜索复杂问题，多步推理。</p><h3>产品亮点</h3><p><em>高效获取信息</em>：节省筛选网页的时间。<em>信息可靠</em>：引用来源，可验证真实性。<em>隐私保护</em>：不存储用户搜索历史（除非选择保存）。</p><h3>适用人群</h3><p>研究人员、学生、知识工作者、记者、需要快速获取准确信息的任何人。</p>"
+  },
+  {
+    "title": "ChatGPT - OpenAI 旗舰对话助手",
+    "url": "https://chat.openai.com",
+    "category_id": "聊天对话",
+    "description": "全球最受欢迎的 AI 对话助手，基于 GPT-4o/GPT-4.1 等强大模型，支持文本、语音、图像多模态交互。",
+    "tags": "ChatGPT, OpenAI, AI助手, 对话AI",
+    "keywords": "ChatGPT, GPT-4, AI对话, 智能助手, 写作辅助, 编程助手",
+    "content": "<h2>全球最受欢迎的 AI 对话助手</h2><p>ChatGPT 由 OpenAI 开发，是基于 GPT 系列大语言模型的对话式 AI。它具备强大的理解、推理和创作能力，支持文本、语音、图像、代码等多种交互方式，是目前功能最全面的 AI 助手。</p><h3>核心功能</h3><p><strong>自然对话</strong>：流畅的上下文理解，类人对话体验。<strong>内容创作</strong>：写作、翻译、摘要、改写等文本处理能力。<strong>代码辅助</strong>：代码生成、调试、解释，支持多种编程语言。<strong>多模态交互</strong>：上传图片、文件进行分析，语音对话。<strong>GPTs 商店</strong>：可定制专属 AI 助手，或使用他人创作的 GPTs。<strong>联网搜索</strong>：实时获取最新信息。</p><h3>产品亮点</h3><p><em>模型强大</em>：GPT-4o、GPT-4.1 等模型处于行业领先水平。<em>生态完善</em>：API、移动 App、企业版、教育版全覆盖。<em>持续进化</em>：频繁更新，功能不断增强。</p><h3>适用人群</h3><p>所有人——学生、教师、开发者、创作者、企业管理者、普通用户。</p>"
+  },
+  {
+    "title": "Claude - Anthropic 出品的 AI 助手",
+    "url": "https://claude.ai",
+    "category_id": "聊天对话",
+    "description": "以长文本处理能力和安全性著称的 AI 助手，支持 200K+ 上下文窗口。",
+    "tags": "Claude, Anthropic, AI助手, 长文本",
+    "keywords": "Claude, AI对话, 长文本处理, 智能分析, 内容安全",
+    "content": "<h2>长文本处理专家级 AI 助手</h2><p>Claude 由 Anthropic 公司开发，以出色的长文本处理能力和对齐安全性著称。Claude 3 系列模型（Haiku、Sonnet、Opus）在不同速度和智能水平上满足各种需求，支持 200K token 的超大上下文窗口。</p><h3>核心功能</h3><p><strong>超大上下文</strong>：可处理整本书、长篇论文等超长文档。<strong>多模态</strong>：支持文本和图像输入分析。<strong>Artifacts</strong>：实时预览生成的代码、文档、设计稿。<strong>安全可靠</em>：经过宪法 AI（Constitutional AI）训练，输出更安全。</p><h3>产品亮点</h3><p><em>长文本无敌</em>：可分析数百页文档，适合深度研究。<em>思维链优秀</em>：复杂推理和分析能力强。<em>界面优雅</em>：设计简洁，用户体验出色。</p><h3>适用人群</h3><p>研究人员、法律专业人士、分析师、需要处理大量文档的知识工作者。</p>"
+  },
+  {
+    "title": "DeepSeek - 中国领先的 AI 助手",
+    "url": "https://www.deepseek.com",
+    "category_id": "聊天对话",
+    "description": "深度求索推出的 AI 对话助手，在数学、编程和逻辑推理方面表现优异。",
+    "tags": "DeepSeek, AI助手, 国产AI, 编程助手",
+    "keywords": "DeepSeek, 深度求索, AI对话, 数学推理, 代码生成, 国产大模型",
+    "content": "<h2>中国领先的 AI 对话助手</h2><p>DeepSeek 由深度求索（DeepSeek）公司开发，是中国最优秀的 AI 助手之一。DeepSeek-V3、DeepSeek-R1 等模型在数学推理、代码生成和逻辑分析方面达到世界一流水平，同时保持开放和开源的态度。</p><h3>核心功能</h3><p><strong>强大推理</strong>：DeepSeek-R1 专注复杂推理和问题解决。<strong>代码能力</strong>：编程辅助表现优异，支持多种语言。<strong>长文本</strong>：支持 128K-256K 上下文窗口。<strong>深度思考</strong>：展示思维过程，推理透明。<strong>开放 API</strong>：提供高性价比 API 服务。</p><h3>产品亮点</h3><p><em>国产之光</em>：中国自主研发，打破国外垄断。<em>数学编程强</em>：理工科任务表现出色。<em>性价比高</em>：API 价格极具竞争力。</p><h3>适用人群</h3><p>开发者、理工科学生、研究人员、企业用户、寻找国产 AI 替代方案的用户。</p>"
+  },
+  {
+    "title": "Cursor - AI 原生代码编辑器",
+    "url": "https://cursor.sh",
+    "category_id": "编程工具",
+    "description": "融合了 AI 能力的代码编辑器，支持代码生成、重构、解释等功能。",
+    "tags": "Cursor, AI编程, 代码编辑器, 开发工具",
+    "keywords": "Cursor, AI代码助手, 智能编辑器, 编程效率, 代码补全",
+    "content": "<h2>AI 原生代码编辑器</h2><p>Cursor 是基于 VS Code 二次开发的 AI 原生代码编辑器。它将 AI 能力深度集成到编辑器中，支持代码生成、重构、解释、调试等功能，是现代开发者的效率倍增器。</p><h3>核心功能</h3><p><strong>代码生成</strong>：Tab 键智能补全，支持多行代码生成。<strong>自然语言编程</strong>：用中文/英文描述需求，自动生成代码。<strong>代码库理解</strong>：可分析整个项目的代码结构和依赖关系。<strong>重构与优化</strong>：一键重构代码，优化性能。<strong>Chat 模式</strong>：与 AI 讨论代码问题，获取解释和建议。<strong>多模型支持</strong>：可切换 GPT-4、Claude、DeepSeek 等模型。</p><h3>产品亮点</h3><p><em>无缝集成</em>：AI 功能与编辑器完美融合，不中断开发流程。<em>上下文理解</em>：理解整个项目，而非当前文件。<em>隐私保护</em>：本地模式可保护代码隐私。</p><h3>适用人群</h3><p>软件开发者、全栈工程师、数据科学家、学生开发者、编程学习者。</p>"
+  },
+  {
+    "title": "GitHub Copilot - GitHub 官方 AI 编程助手",
+    "url": "https://github.com/features/copilot",
+    "category_id": "编程工具",
+    "description": "GitHub 与 OpenAI 合作推出的 AI 编程助手，提供智能代码补全和建议。",
+    "tags": "GitHub Copilot, AI编程, 代码补全, OpenAI",
+    "keywords": "GitHub Copilot, AI代码助手, 编程工具, 代码建议, 开发效率",
+    "content": "<h2>GitHub 官方 AI 编程助手</h2><p>GitHub Copilot 是由 GitHub 和 OpenAI 联合开发的 AI 编程助手。基于 OpenAI Codex 模型，它能根据上下文自动补全代码、生成函数、编写测试，是提升编程效率的利器。</p><h3>核心功能</h3><p><strong>智能代码补全</strong>：根据上下文自动补全整行或整块代码。<strong>多语言支持</strong>：支持 Python、JavaScript、TypeScript、Go 等数十种语言。<strong>自然语言转代码</strong>：写注释自动生成代码。<strong>Copilot Chat</strong>：与 AI 对话，获取代码解释和调试帮助。<strong>Copilot Workspace</strong>：AI 驱动的开发环境，自动生成 Pull Request 描述。</p><h3>产品亮点</h3><p><em>编辑器集成</em>：支持 VS Code、JetBrains、Neovim 等主流编辑器。<em>学习能力强</em>：从数十亿开源代码中学习，覆盖常见模式。<em>企业级</em>：提供企业版，满足安全和合规需求。</p><h3>适用人群</h3><p>专业软件开发者、软件工程师团队、编程学生、开源贡献者。</p>"
+  },
+  {
+    "title": "Jasper AI - 企业级 AI 写作助手",
+    "url": "https://www.jasper.ai",
+    "category_id": "写作助手",
+    "description": "专为营销和企业文案设计的 AI 写作工具，支持品牌声音定制。",
+    "tags": "Jasper, AI写作, 营销文案, 内容创作",
+    "keywords": "Jasper, AI文案写作, 营销内容, 博客生成, 品牌声音",
+    "content": "<h2>企业级 AI 写作与营销内容平台</h2><p>Jasper AI 是专为企业和营销团队设计的 AI 写作工具。它提供丰富的营销文案模板，支持品牌声音定制，帮助企业规模化生产高质量内容。</p><h3>核心功能</h3><p><strong>营销文案模板</strong>：广告、社交媒体、邮件、落地页等数十种模板。<strong>品牌声音</strong>：训练 AI 模仿企业独特的语气和风格。<strong>长文写作</strong>：博客、白皮书、报告等长篇内容生成。<strong>SEO 优化</strong>：内置 SEO 工具，优化内容搜索引擎排名。<strong>团队协作</strong>：支持多人协作和内容管理。</p><h3>产品亮点</h3><p><em>专注营销</em>：专为营销场景优化，效果显著。<em>企业功能</em>：品牌声音、团队权限、API 集成。<em>丰富资源</em>：提供大量写作培训和使用案例。</p><h3>适用人群</h3><p>营销团队、内容创作者、社交媒体运营者、小企业主、文案写作者。</p>"
+  },
+  {
+    "title": "Notion AI - 集成在 Notion 中的 AI 助手",
+    "url": "https://www.notion.so/product/ai",
+    "category_id": "写作助手",
+    "description": "深度集成在 Notion 中的 AI 写作助手，支持文档生成、摘要、翻译等功能。",
+    "tags": "Notion, AI写作, 笔记工具, 生产力",
+    "keywords": "Notion AI, 笔记AI, 文档生成, 内容摘要, AI助手",
+    "content": "<h2>集成在 Notion 中的 AI 助手</h2><p>Notion AI 是深度集成在 Notion 中的 AI 功能。它能在文档中直接生成内容、摘要、翻译、改写，与 Notion 的笔记和知识库功能无缝结合，是知识工作者的理想工具。</p><h3>核心功能</h3><p><strong>内容生成</strong>：博客文章、会议纪要、项目计划等。<strong>智能摘要</strong>：一键总结长文档的核心要点。<strong>翻译与改写</strong>：支持多语言翻译和风格改写。<strong>问答模式</strong>：基于 Notion 知识库进行智能问答。<strong>表格填充</strong>：自动填充数据库和表格。</p><h3>产品亮点</h3><p><em>无缝集成</em>：无需切换工具，在 Notion 中直接使用。<em>上下文感知</em>：理解文档内容和项目背景。<em>团队友好</em>：适合团队协作和知识管理。</p><h3>适用人群</h3><p>Notion 用户、知识工作者、产品经理、项目经理、内容创作者。</p>"
+  },
+  {
+    "title": "Khanmigo - Khan Academy 推出的 AI 教育助手",
+    "url": "https://www.khanacademy.org/khan-labs",
+    "category_id": "学习教育",
+    "description": "由可汗学院推出的 AI 教育助手，提供个性化辅导和苏格拉底式教学。",
+    "tags": "Khanmigo, AI教育, 个性化学习, 在线教育",
+    "keywords": "Khanmigo, AI辅导, 可汗学院, 教育科技, 个性化教学",
+    "content": "<h2>AI 驱动的个性化教育助手</h2><p>Khanmigo 是由著名在线教育平台 Khan Academy（可汗学院）开发的 AI 教育助手。它采用苏格拉底式教学方法，通过提问引导学生思考，而非直接给出答案，是真正的学习伙伴。</p><h3>核心功能</h3><p><strong>个性化辅导</strong>：根据学生水平提供定制化指导。<strong>苏格拉底式教学</strong>：引导思考而非直接给答案。<strong>写作指导</strong>：帮助学生改进作文，提供反馈。<strong>历史人物对话</strong>：与历史人物"对话"，沉浸式学习。<strong>数学解题</strong>：一步步引导解决数学问题，而非直接计算。</p><h3>产品亮点</h3><p><em>教育理念先进</em>：培养思维能力，而非简单刷题。<em>安全可控</em>：专为教育场景设计，内容安全。<em>教师友好</em>：提供教师仪表板，监控学生进度。</p><h3>适用人群</h3><p>K-12 学生、教师、家长、自学者、教育工作者。</p>"
+  },
+  {
+    "title": "Gamma - AI 演示文稿生成工具",
+    "url": "https://gamma.app",
+    "category_id": "办公提效",
+    "description": "一键生成精美演示文稿的 AI 工具，支持多种风格和格式。",
+    "tags": "Gamma, AI演示, PPT生成, 幻灯片",
+    "keywords": "Gamma, AI幻灯片, 演示文稿制作, PPT工具, 自动排版",
+    "content": "<h2>一键生成精美演示文稿</h2><p>Gamma 是一款 AI 驱动的演示文稿生成工具。它可以根据主题或大纲自动生成设计精美的幻灯片，支持多种风格和格式，大幅提升演示文稿制作效率。</p><h3>核心功能</h3><p><strong>一键生成</strong>：输入主题或大纲，自动生成完整 PPT。<strong>精美设计</strong>：内置专业设计模板，排版美观。<strong>多种格式</strong>：可导出为 PDF、PPT，或在线分享。<strong>内容编辑</strong>：支持 AI 续写、改写、翻译。<strong>协作功能</strong>：支持团队协作和评论。</p><h3>产品亮点</h3><p><em>设计自动</em>：无需设计基础，自动排版美观。<em>快速高效</em>：几分钟完成原本数小时的工作。<em>在线分享</em>：生成链接即可分享，无需下载。</p><h3>适用人群</h3><p>商务人士、教师、演讲者、产品经理、营销人员、需要频繁制作 PPT 的职场人。</p>"
+  }
+]

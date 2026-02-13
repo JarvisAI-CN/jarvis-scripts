@@ -1,0 +1,72 @@
+# 自主编程控制器 v2.0 配置文件
+
+# 基础配置
+workspace: /home/ubuntu/.openclaw/workspace
+python_executable: /usr/bin/python3
+
+# 任务配置
+task:
+  file: .task_list.json
+  max_concurrent: 3
+  default_priority: medium
+  retry_on_failure: true
+  max_retries: 3
+
+# Git 配置
+git:
+  enabled: true
+  auto_push: true
+  branch: main
+  commit_message_template: "[{type}] {title}"
+
+# 上下文管理配置
+context:
+  compress_every: 5
+  compress_minutes: 30
+  keep_compressed_history: 10
+
+# 日志配置
+logging:
+  progress_flow: logs/progress_flow.log
+  level: INFO
+  max_size_mb: 100
+  backup_count: 5
+
+# 健康检查配置
+health_checks:
+  interval_seconds: 300  # 5 分钟
+  checks:
+    - gateway
+    - webdav
+    - api_health
+    - vnc
+    - bt_panel
+    - disk_space
+    - git_sync
+    - github_connectivity
+
+# 自愈配置
+self_healing:
+  enabled: true
+  max_attempts: 3
+  alert_on_failure: true
+
+# 验证配置
+verification:
+  enabled: true
+  e2e_testing: true
+  skip_on_failure: false
+
+# 调度配置
+scheduling:
+  mode: event_driven  # event_driven | polling | hybrid
+  polling_interval: 30  # 秒
+
+# LLM 配置
+llm:
+  provider: google-antigravity
+  model: gemini-2.5-pro-thinking
+  fallback_provider: zhipu
+  fallback_model: glm-4.7
+  max_tokens: 8192
+  temperature: 0.7

@@ -9,6 +9,17 @@
 
 ## ⚠️ 重要变更记录
 
+### 2026-02-13 15:35: 自助编程与 GitHub 自动同步闭环完成 ⭐⭐⭐⭐⭐
+- **成果**: 
+  - ✅ **`auto_maintain.sh`**: 建立了自动化维护闭环，每小时自动执行 API 健康检查、TODO 更新及 GitHub 代码同步。
+  - ✅ **`api_health_monitor_v2.py`**: 重写了健康检查逻辑，通过 `models status` 智能检测 OAuth 状态与额度风险。
+  - ✅ **代码托管**: 成功将 `jarvis-scripts` 同步至最新状态，包含了所有核心运维脚本。
+- **自动化逻辑**: 
+  1. 检查 API 健康度。
+  2. 智能更新 `TODO.md` 任务进度。
+  3. 捕获工作区变更并自动推送到 GitHub。
+- **仓库地址**: `https://github.com/JarvisAI-CN/jarvis-scripts.git`
+
 ### 2026-02-11 15:55: 系统致命错误恢复与飞书启用 ⭐⭐⭐⭐⭐
 - **背景**: 系统遭遇意外致命错误，导致状态不一致。
 - **动作**: 
@@ -268,8 +279,7 @@
 - **优先级队列**:
   1. **Primary**: `google-antigravity/gemini-3-flash` (日常首选，高效率)
   2. **Fallback 1 (zhipu)**: `zhipu/glm-4.7` (首选替补 & 重活担当。智谱 Coding Plan 套餐)
-  3. **Fallback 2 (pro)**: `google-antigravity/gemini-3-pro` (深度思考 & 大上下文)
-  4. **Fallback 3 (kimi)**: `nvidia/moonshotai/kimi-k2.5` (长文本/特定优化)
+  3. **Fallback 2 (kimi)**: `nvidia/moonshotai/kimi-k2.5` (长文本/特定优化)
 - **脏活累活原则**: 凡是涉及大规模文件扫描、重度编码、复杂逻辑重构的任务，优先启动 `zhipu/glm-4.7` 子代理执行，以最大化利用已购买的 Coding Plan 套餐。
 - **重置机制**: 每日 **01:00** (GMT+8) 自动重置任务状态及凌晨学习标记，确保跨日任务连续性并避开数据延迟。
 

@@ -1,0 +1,49 @@
+{
+  "version": "2.0",
+  "last_updated": "2026-02-13T17:36:00+08:00",
+  "statistics": {
+    "total": 1,
+    "pending": 1,
+    "in_progress": 0,
+    "done": 0,
+    "failed": 0
+  },
+  "tasks": [
+    {
+      "id": "TASK-2026-02-13-009",
+      "title": "修复 WebDAV 写权限异常",
+      "description": "修复 /home/ubuntu/123pan 挂载后无法写入的问题，诊断并修复 davfs2 凭证配置",
+      "source": "manual",
+      "type": "bugfix",
+      "priority": "high",
+      "status": "in_progress",
+      "created_at": "2026-02-13T17:36:00+08:00",
+      "assigned_to": "GLM-4.7",
+      "subtasks": [
+        {
+          "id": "SUBTASK-001",
+          "title": "诊断 WebDAV 挂载状态和权限",
+          "status": "in_progress",
+          "git_commit": "64657e1a3b4d38115c11a031cde8acbba66c8f02"
+        },
+        {
+          "id": "SUBTASK-002",
+          "title": "检查 davfs2 凭证配置",
+          "status": "in_progress"
+        },
+        {
+          "id": "SUBTASK-003",
+          "title": "实施修复方案",
+          "status": "pending"
+        },
+        {
+          "id": "SUBTASK-004",
+          "title": "E2E 验证读写能力",
+          "status": "pending"
+        }
+      ],
+      "logs": [],
+      "started_at": "2026-02-13T17:37:12.161090"
+    }
+  ]
+}

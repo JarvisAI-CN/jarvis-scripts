@@ -20,7 +20,11 @@ from datetime import datetime, timedelta
 
 # 配置
 OPENCLAW_PATH = "/home/ubuntu/.nvm/versions/node/v24.13.0/bin/openclaw"
+NODE_BIN_DIR = "/home/ubuntu/.nvm/versions/node/v24.13.0/bin"
 STATE_FILE = "/home/ubuntu/.openclaw/workspace/.api_health_state.json"
+
+# 确保 node 在 PATH 中，否则 openclaw 脚本无法运行 (它依赖 #!/usr/bin/env node)
+os.environ["PATH"] = f"{NODE_BIN_DIR}:{os.environ.get('PATH', '')}"
 LOG_FILE = "/home/ubuntu/.openclaw/workspace/logs/api_health.log"
 ALERT_FILE = "/home/ubuntu/.openclaw/workspace/.api_health_alert.json"
 
