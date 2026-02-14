@@ -1,10 +1,10 @@
 {
   "version": "2.0",
-  "last_updated": "2026-02-14T10:55:04.449645",
+  "last_updated": "2026-02-14T10:55:09.463731",
   "statistics": {
     "total": 9,
-    "pending": 2,
-    "in_progress": 0,
+    "pending": 1,
+    "in_progress": 1,
     "done": 2,
     "failed": 5
   },
@@ -187,8 +187,9 @@
       "type": "refactor",
       "priority": "medium",
       "quadrant": "not_urgent_important",
-      "status": "pending",
-      "metadata": {}
+      "status": "in_progress",
+      "metadata": {},
+      "started_at": "2026-02-14T10:55:09.463721"
     },
     {
       "id": "TASK-2026-02-13-008",
