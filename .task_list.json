@@ -1,10 +1,10 @@
 {
   "version": "2.0",
-  "last_updated": "2026-02-14T11:56:03.522003",
+  "last_updated": "2026-02-14T11:56:03.536234",
   "statistics": {
     "total": 9,
-    "pending": 6,
-    "in_progress": 0,
+    "pending": 5,
+    "in_progress": 1,
     "done": 2,
     "failed": 1
   },
@@ -59,14 +59,14 @@
       "type": "feature",
       "priority": "high",
       "quadrant": "urgent_important",
-      "status": "pending",
+      "status": "in_progress",
       "metadata": {
         "status": "in_progress",
         "progress": 61,
         "task_count": 5,
         "description": "5个"
       },
-      "started_at": "2026-02-14T10:50:36.794209",
+      "started_at": "2026-02-14T11:56:03.536227",
       "completed_at": "2026-02-14T10:50:41.289286",
       "error": "任务执行失败"
     },
