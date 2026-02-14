@@ -1,0 +1,48 @@
+# 测试框架配置文件
+# 版本: v1.0
+# 创建: 2026-02-14
+
+# 测试环境配置
+environment:
+  name: "production"
+  timeout: 300.0  # 默认超时时间（秒）
+  parallel: true  # 是否并发执行
+  max_workers: 4  # 最大并发数
+
+# 日志配置
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR
+  file: "logs/test_framework.log"
+  console: true
+
+# 测试目录配置
+paths:
+  test_dir: "tests/"
+  output_dir: "test_results/"
+  report_dir: "test_reports/"
+
+# 报告配置
+reports:
+  json: true
+  html: true
+  console: true
+  feishu: false  # 飞书通知开关
+
+# 飞书配置（如需启用通知）
+feishu:
+  webhook_url: ""  # 飞书机器人 webhook URL
+  notify_on_failure: true
+  notify_on_success: false
+
+# 性能基准（可选）
+performance:
+  response_time_threshold: 1.0  # 响应时间阈值（秒）
+  memory_threshold: 512  # 内存使用阈值（MB）
+  cpu_threshold: 80  # CPU 使用率阈值（%）
+
+# 安全规则（可选）
+security:
+  check_sql_injection: true
+  check_xss: true
+  check_csrf: true
+  enforce_https: true

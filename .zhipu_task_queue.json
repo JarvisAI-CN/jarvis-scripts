@@ -1,0 +1,18 @@
+[
+  {
+    "id": "MANUAL-20260214181150",
+    "title": "测试任务：开发自动化端到端测试系统的测试框架",
+    "description": "手动添加的任务",
+    "category": "coding",
+    "priority": 1,
+    "estimated_time_minutes": 30,
+    "value_score": 80.0,
+    "source": "manual",
+    "created_at": "2026-02-14T18:11:50.405782",
+    "started_at": null,
+    "completed_at": null,
+    "status": "pending",
+    "result": null,
+    "git_commit": null
+  }
+]
