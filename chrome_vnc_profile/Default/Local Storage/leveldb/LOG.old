@@ -1,3 +1,7 @@
-2026/02/14-14:54:02.963 9f209 Reusing MANIFEST /home/ubuntu/.openclaw/workspace/chrome_vnc_profile/Default/Local Storage/leveldb/MANIFEST-000001
-2026/02/14-14:54:02.973 9f209 Recovering log #7
-2026/02/14-14:54:02.974 9f209 Reusing old log /home/ubuntu/.openclaw/workspace/chrome_vnc_profile/Default/Local Storage/leveldb/000007.log 
+2026/02/14-15:16:08.045 a0eae Reusing MANIFEST /home/ubuntu/.openclaw/workspace/chrome_vnc_profile/Default/Local Storage/leveldb/MANIFEST-000001
+2026/02/14-15:16:08.056 a0eae Recovering log #18
+2026/02/14-15:16:08.056 a0eae Level-0 table #20: started
+2026/02/14-15:16:08.064 a0eae Level-0 table #20: 24293 bytes OK
+2026/02/14-15:16:08.064 a0eae Recovering log #20
+2026/02/14-15:16:08.064 a0eae Reusing old log /home/ubuntu/.openclaw/workspace/chrome_vnc_profile/Default/Local Storage/leveldb/000020.log 
+2026/02/14-15:16:08.069 a0eae Delete type=0 #18
