@@ -27,6 +27,15 @@ from enum import Enum
 import hashlib
 import traceback
 
+# 导入自定义模块
+try:
+    scripts_dir = Path(__file__).parent
+    if str(scripts_dir) not in sys.path:
+        sys.path.insert(0, str(scripts_dir))
+    from modules.feishu_notifier import FeishuNotifier
+except ImportError:
+    FeishuNotifier = None
+
 # 配置
 WORKSPACE = Path("/home/ubuntu/.openclaw/workspace")
 TASK_LIST_FILE = WORKSPACE / ".task_list.json"
@@ -645,6 +654,14 @@ class AutonomousController:
         # 初始化上下文管理器
         self.context = ContextManager(CONTEXT_FILE, self.logger)
 
+        # 初始化飞书通知器
+        if FeishuNotifier:
+            self.notifier = FeishuNotifier()
+            self.logger.info("CONTROLLER", "飞书通知模块已加载")
+        else:
+            self.notifier = None
+            self.logger.warning("CONTROLLER", "飞书通知模块加载失败")
+
         # 初始化子代理协调器
         try:
             # 添加脚本目录到 Python 路径
@@ -667,6 +684,11 @@ class AutonomousController:
         date_str = datetime.now().strftime("%Y-%m-%d")
         counter = len(self.task_manager.data["tasks"]) + 1
         return f"TASK-{date_str}-{counter:03d}"
+
+    def notify(self, message: str):
+        """发送通知"""
+        if self.notifier:
+            self.notifier.send_text(message)
 
     def run(self):
         """主循环"""
@@ -691,7 +713,8 @@ class AutonomousController:
 
                     # 检查是否需要压缩上下文
                     if self.context.should_compress():
-                        self.context.compress()
+                        summary = self.context.compress()
+                        self.notify(f"📦 [自主维护] 上下文已压缩\n已完成任务: {summary['session_summary']['tasks_completed']}\n运行时长: {summary['session_summary']['session_duration']}")
 
                 # 短暂休眠
                 time.sleep(5)
@@ -712,6 +735,7 @@ class AutonomousController:
         task_title = task_dict["title"]
 
         self.logger.info("CONTROLLER", f"开始执行任务: {task_id} - {task_title}")
+        self.notify(f"🚀 [自主维护] 开始任务\nID: {task_id}\n标题: {task_title}")
 
         # 更新任务状态为进行中
         self.task_manager.update_task_status(task_id, TaskStatus.IN_PROGRESS)
@@ -737,6 +761,7 @@ class AutonomousController:
                     commit_hash=self.git.get_current_commit()
                 )
                 self.logger.success("CONTROLLER", f"任务完成: {task_id}")
+                self.notify(f"✅ [自主维护] 任务完成\nID: {task_id}\n标题: {task_title}")
             else:
                 self.task_manager.update_task_status(
                     task_id,
@@ -744,6 +769,7 @@ class AutonomousController:
                     error="任务执行失败"
                 )
                 self.logger.error("CONTROLLER", f"任务失败: {task_id}")
+                self.notify(f"❌ [自主维护] 任务失败\nID: {task_id}\n标题: {task_title}")
 
         except Exception as e:
             self.task_manager.update_task_status(
@@ -755,6 +781,7 @@ class AutonomousController:
                 "CONTROLLER",
                 f"任务异常: {task_id} - {traceback.format_exc()}"
             )
+            self.notify(f"🚨 [自主维护] 任务异常\nID: {task_id}\n错误: {str(e)[:100]}...")
 
     def _execute_maintenance_task(self, task: Dict) -> bool:
         """执行维护任务"""
