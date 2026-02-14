@@ -1,18 +1,1 @@
-[
-  {
-    "id": "TASK-20260215033118-2",
-    "title": "WhatsApp语音识别处理项目",
-    "description": "从TODO.md自动提取的任务：WhatsApp语音识别处理项目",
-    "category": "coding",
-    "priority": 0,
-    "estimated_time_minutes": 30,
-    "value_score": 50.0,
-    "source": "TODO.md",
-    "created_at": "2026-02-15T03:31:18.847514",
-    "started_at": null,
-    "completed_at": null,
-    "status": "pending",
-    "result": null,
-    "git_commit": null
-  }
-]
+[]
