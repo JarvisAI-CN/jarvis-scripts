@@ -1,12 +1,12 @@
 {
   "version": "2.0",
-  "last_updated": "2026-02-14T10:55:09.490658",
+  "last_updated": "2026-02-14T10:55:13.972360",
   "statistics": {
     "total": 9,
     "pending": 0,
-    "in_progress": 1,
+    "in_progress": 0,
     "done": 2,
-    "failed": 6
+    "failed": 7
   },
   "tasks": [
     {
@@ -205,9 +205,11 @@
       "type": "feature",
       "priority": "low",
       "quadrant": "not_urgent_not_important",
-      "status": "in_progress",
+      "status": "failed",
       "metadata": {},
-      "started_at": "2026-02-14T10:55:09.490653"
+      "started_at": "2026-02-14T10:55:09.490653",
+      "completed_at": "2026-02-14T10:55:13.972351",
+      "error": "任务执行失败"
     },
     {
       "id": "TASK-2026-02-13-009",
