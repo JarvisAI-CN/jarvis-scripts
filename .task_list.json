@@ -1,12 +1,12 @@
 {
   "version": "2.0",
-  "last_updated": "2026-02-14T10:55:09.463731",
+  "last_updated": "2026-02-14T10:55:09.477730",
   "statistics": {
     "total": 9,
     "pending": 1,
-    "in_progress": 1,
+    "in_progress": 0,
     "done": 2,
-    "failed": 5
+    "failed": 6
   },
   "tasks": [
     {
@@ -187,9 +187,11 @@
       "type": "refactor",
       "priority": "medium",
       "quadrant": "not_urgent_important",
-      "status": "in_progress",
+      "status": "failed",
       "metadata": {},
-      "started_at": "2026-02-14T10:55:09.463721"
+      "started_at": "2026-02-14T10:55:09.463721",
+      "completed_at": "2026-02-14T10:55:09.477724",
+      "error": "任务执行失败"
     },
     {
       "id": "TASK-2026-02-13-008",
