@@ -1,9 +1,9 @@
 {
   "version": "2.0",
-  "last_updated": "2026-02-14T11:56:03.536234",
+  "last_updated": "2026-02-14T16:50:01.756309",
   "statistics": {
-    "total": 9,
-    "pending": 5,
+    "total": 10,
+    "pending": 6,
     "in_progress": 1,
     "done": 2,
     "failed": 1
@@ -249,6 +249,22 @@
           "message": "Completed: Resolved write permissions issue and added fstab persistence. Verified with test file."
         }
       ]
+    },
+    {
+      "id": "TASK-2026-02-14-010",
+      "title": "测试任务",
+      "description": "这是一个测试任务",
+      "source": "manual",
+      "type": "maintenance",
+      "priority": "medium",
+      "status": "pending",
+      "created_at": "2026-02-14T16:50:01.756252",
+      "started_at": null,
+      "completed_at": null,
+      "assigned_to": "GLM-4.7",
+      "subtasks": [],
+      "logs": [],
+      "error": null
     }
   ]
 }
