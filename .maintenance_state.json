@@ -1,11 +1,11 @@
 {
-  "timestamp": "2026-02-13T16:48:37+08:00",
-  "status": "partial_fix",
+  "timestamp": "2026-02-14T10:51:02+08:00",
+  "status": "checked",
   "checks": {
   "gateway": "ok",
-  "webdav": "failed",
+  "webdav": "ok",
   "api_health": "failed",
-  "vnc": "failed",
+  "vnc": "ok",
   "bt_panel": "failed",
   "disk_space": "ok",
   "git_sync": "needs_sync"
