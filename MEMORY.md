@@ -9,6 +9,13 @@
 
 ## ⚠️ 重要变更记录
 
+### 2026-02-14 08:40: 邮箱系统统一与清理 ⭐⭐⭐
+- **动作**: 
+  - 弃用不稳定的 `jarvis-cn-ai@outlook.com` 账户。
+  - 统一使用 `jarvis.openclaw@email.cn` 作为官方唯一邮件发送与接收渠道。
+  - 更新了 `IDENTITY.md` 和 `email_tool.py` 的配置逻辑。
+- **原因**: 主人反馈 Outlook 账户无法正常发件，且 `email.cn` 账户更符合系统身份设定。
+
 ### 2026-02-13 15:35: 自助编程与 GitHub 自动同步闭环完成 ⭐⭐⭐⭐⭐
 - **成果**: 
   - ✅ **`auto_maintain.sh`**: 建立了自动化维护闭环，每小时自动执行 API 健康检查、TODO 更新及 GitHub 代码同步。

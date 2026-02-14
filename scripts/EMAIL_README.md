@@ -1,13 +1,12 @@
 # 贾维斯的邮件工具
 
-Outlook邮箱自动化工具集，支持收发邮件、监控、搜索等功能。
+贾维斯官方邮件工具集，支持收发邮件、监控、搜索等功能。
 
-## 📧 邮箱配置
+## 📧 邮箱配置 (官方唯一)
 
-- **邮箱**: jarvis-cn-ai@outlook.com
-- **密码**: Jarvis@2026AI#Helper
-- **IMAP**: outlook.office365.com:993 (SSL)
-- **SMTP**: smtp.office365.com:587 (STARTTLS)
+- **邮箱**: jarvis.openclaw@email.cn
+- **IMAP**: imap.email.cn:993 (SSL)
+- **SMTP**: smtp.email.cn:465 (SSL)
 
 ## 🚀 快速开始
 
