@@ -777,31 +777,51 @@ class AutonomousController:
 
     def _execute_bugfix_task(self, task: Dict) -> bool:
         """执行 Bug 修复任务"""
-        self.logger.info("CONTROLLER", "执行 Bug 修复任务")
+        self.logger.info("CONTROLLER", f"开始执行 Bug 修复任务: {task['id']}")
 
-        # TODO: 实现智能 Bug 修复逻辑
-        # 这里可以调用 GLM-4.7/5 进行代码生成
+        # 1. 创建任务上下文
+        task_context = {
+            "task_id": task["id"],
+            "title": task["title"],
+            "description": task["description"],
+            "type": "bugfix",
+            "workspace": str(WORKSPACE)
+        }
 
-        # 占位实现
-        self.logger.warning(
-            "CONTROLLER",
-            "Bug 修复任务暂未实现完整逻辑（占位）"
-        )
+        # 2. 写入上下文文件供子代理读取
+        context_file = WORKSPACE / f".subtask_{task['id']}.json"
+        with open(context_file, "w", encoding="utf-8") as f:
+            json.dump(task_context, f, indent=2)
 
+        # 3. 记录等待子代理
+        self.logger.info("CONTROLLER", f"已生成任务上下文，等待子代理执行: {context_file}")
+        
+        # 在真实自主模式下，这里会调用 sub-agent
+        # 这里我们调用一个模拟的编码命令，或者由主代理接管
+        self.logger.warning("CONTROLLER", "需由主代理调用 sessions_spawn 执行该任务")
+        
+        # 暂时返回 False，直到主代理实现自动对接
         return False
 
     def _execute_feature_task(self, task: Dict) -> bool:
         """执行功能开发任务"""
-        self.logger.info("CONTROLLER", "执行功能开发任务")
+        self.logger.info("CONTROLLER", f"开始执行功能开发任务: {task['id']}")
 
-        # TODO: 实现自主编码逻辑
-        # 这里可以调用 GLM-5 Coding Plan
+        # 逻辑同上
+        task_context = {
+            "task_id": task["id"],
+            "title": task["title"],
+            "description": task["description"],
+            "type": "feature",
+            "workspace": str(WORKSPACE)
+        }
 
-        # 占位实现
-        self.logger.warning(
-            "CONTROLLER",
-            "功能开发任务暂未实现完整逻辑（占位）"
-        )
+        context_file = WORKSPACE / f".subtask_{task['id']}.json"
+        with open(context_file, "w", encoding="utf-8") as f:
+            json.dump(task_context, f, indent=2)
+
+        self.logger.info("CONTROLLER", f"已生成任务上下文，等待子代理执行: {context_file}")
+        self.logger.warning("CONTROLLER", "需由主代理调用 sessions_spawn 执行该任务")
 
         return False
 
