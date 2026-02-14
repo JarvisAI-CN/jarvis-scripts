@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-02-14T10:54:45+08:00",
+  "timestamp": "2026-02-14T10:55:03+08:00",
   "level": "WARNING",
-  "message": "bt_panel 自动修复失败，需要人工介入"
+  "message": "部分问题未能自动修复: api_health bt_panel git_sync"
 }
