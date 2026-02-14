@@ -7,7 +7,7 @@ pyautogui.FAILSAFE = False
 
 USERNAME = 'fs123'
 PASSWORD = 'fs123456'
-CAPTCHA = 'u93b'
+CAPTCHA = '9fPR'
 
 def main():
     print("Step 2: Login with CAPTCHA")
