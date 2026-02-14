@@ -45,7 +45,7 @@ def get_project_info(project_name):
                     progress = '0%'
             
             # 确定状态
-            if re.search(r'(?:状态|status)[\s\*]*:\s*(?:项目)?✅\s*(?:已完成|completed|100%|完工)', content, re.I):
+            if re.search(r'(?:状态|status)[\s\*]*:\s*(?:项目)?✅\s*(?:已完成|completed|100%|完工|完成)', content, re.I):
                 status = '✅ 已完成'
             elif re.search(r'(?:状态|status)[\s\*]*:\s*🛑\s*(?:已取消|cancelled)', content, re.I):
                 status = '🛑 已取消'
