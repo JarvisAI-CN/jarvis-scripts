@@ -1,10 +1,10 @@
 {
   "version": "2.0",
-  "last_updated": "2026-02-14T10:50:41.289293",
+  "last_updated": "2026-02-14T10:50:41.304920",
   "statistics": {
     "total": 9,
-    "pending": 5,
-    "in_progress": 0,
+    "pending": 4,
+    "in_progress": 1,
     "done": 2,
     "failed": 2
   },
@@ -82,11 +82,12 @@
       "type": "feature",
       "priority": "high",
       "quadrant": "urgent_important",
-      "status": "pending",
+      "status": "in_progress",
       "metadata": {
         "status": "in_progress",
         "progress": 18
-      }
+      },
+      "started_at": "2026-02-14T10:50:41.304912"
     },
     {
       "id": "TASK-2026-02-13-004",
