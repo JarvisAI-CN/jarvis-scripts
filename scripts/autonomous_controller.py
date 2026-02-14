@@ -645,6 +645,21 @@ class AutonomousController:
         # 初始化上下文管理器
         self.context = ContextManager(CONTEXT_FILE, self.logger)
 
+        # 初始化子代理协调器
+        try:
+            # 添加脚本目录到 Python 路径
+            scripts_dir = Path(__file__).parent
+            if str(scripts_dir) not in sys.path:
+                sys.path.insert(0, str(scripts_dir))
+
+            from subagent_orchestrator import SubagentOrchestrator
+            self.orchestrator = SubagentOrchestrator(WORKSPACE, self.logger)
+
+            self.logger.info("CONTROLLER", "子代理协调器已加载（三轮协作模式）")
+        except ImportError as e:
+            self.logger.warning("CONTROLLER", f"子代理协调器加载失败: {e}")
+            self.orchestrator = None
+
         self.logger.info("CONTROLLER", "自主编程控制器 v2.0 初始化完成")
 
     def generate_task_id(self) -> str:
@@ -776,60 +791,181 @@ class AutonomousController:
             return False
 
     def _execute_bugfix_task(self, task: Dict) -> bool:
-        """执行 Bug 修复任务"""
+        """执行 Bug 修复任务（使用三轮协作）"""
         self.logger.info("CONTROLLER", f"开始执行 Bug 修复任务: {task['id']}")
 
-        # 1. 创建任务上下文
-        task_context = {
-            "task_id": task["id"],
-            "title": task["title"],
-            "description": task["description"],
-            "type": "bugfix",
-            "workspace": str(WORKSPACE)
-        }
+        # 检查 orchestrator 是否可用
+        if not self.orchestrator:
+            self.logger.error("CONTROLLER", "子代理协调器未初始化")
+            return False
 
-        # 2. 写入上下文文件供子代理读取
-        context_file = WORKSPACE / f".subtask_{task['id']}.json"
-        with open(context_file, "w", encoding="utf-8") as f:
-            json.dump(task_context, f, indent=2)
+        try:
+            # 使用子代理协调器执行三轮协作
+            result = self.orchestrator.execute_bugfix_task(task)
 
-        # 3. 记录等待子代理
-        self.logger.info("CONTROLLER", f"已生成任务上下文，等待子代理执行: {context_file}")
-        
-        # 在真实自主模式下，这里会调用 sub-agent
-        # 这里我们调用一个模拟的编码命令，或者由主代理接管
-        self.logger.warning("CONTROLLER", "需由主代理调用 sessions_spawn 执行该任务")
-        
-        # 暂时返回 False，直到主代理实现自动对接
-        return False
+            if not result.success:
+                self.logger.error(
+                    "CONTROLLER",
+                    f"Bug 修复任务失败: {result.error}"
+                )
+                return False
+
+            # 如果有生成的代码，保存到文件
+            if result.code:
+                # 确定输出文件路径
+                output_file = WORKSPACE / f".fix_{task['id']}.py"
+
+                with open(output_file, 'w', encoding='utf-8') as f:
+                    f.write(result.code)
+
+                self.logger.success(
+                    "CONTROLLER",
+                    f"修复代码已生成: {output_file}"
+                )
+
+                # Git 提交修复代码
+                commit_hash = self.git.commit(
+                    f"fix(bugfix): {task['title']}\n\n"
+                    f"Task ID: {task['id']}\n"
+                    f"Method: 三轮协作 (zhipu → kimi → zhipu)"
+                )
+
+                # E2E 验证
+                verified, message = self.verifier.verify_syntax(result.code)
+
+                if verified:
+                    self.logger.success(
+                        "CONTROLLER",
+                        f"Bug 修复任务验证通过: {message}"
+                    )
+
+                    # 记录关键决策
+                    self.context.add_key_decision(
+                        f"Bug {task['id']} 修复完成，提交: {commit_hash[:7]}"
+                    )
+
+                    return True
+                else:
+                    self.logger.warning(
+                        "CONTROLLER",
+                        f"Bug 修复验证失败: {message}"
+                    )
+                    return False
+            else:
+                self.logger.warning(
+                    "CONTROLLER",
+                    "Bug 修复任务未生成代码"
+                )
+                return False
+
+        except Exception as e:
+            self.logger.error(
+                "CONTROLLER",
+                f"Bug 修复任务异常: {traceback.format_exc()}"
+            )
+            return False
 
     def _execute_feature_task(self, task: Dict) -> bool:
-        """执行功能开发任务"""
+        """执行功能开发任务（使用三轮协作）"""
         self.logger.info("CONTROLLER", f"开始执行功能开发任务: {task['id']}")
 
-        # 逻辑同上
-        task_context = {
-            "task_id": task["id"],
-            "title": task["title"],
-            "description": task["description"],
-            "type": "feature",
-            "workspace": str(WORKSPACE)
-        }
+        # 检查 orchestrator 是否可用
+        if not self.orchestrator:
+            self.logger.error("CONTROLLER", "子代理协调器未初始化")
+            return False
 
-        context_file = WORKSPACE / f".subtask_{task['id']}.json"
-        with open(context_file, "w", encoding="utf-8") as f:
-            json.dump(task_context, f, indent=2)
+        try:
+            # 使用子代理协调器执行三轮协作
+            result = self.orchestrator.execute_feature_task(task)
 
-        self.logger.info("CONTROLLER", f"已生成任务上下文，等待子代理执行: {context_file}")
-        self.logger.warning("CONTROLLER", "需由主代理调用 sessions_spawn 执行该任务")
+            if not result.success:
+                self.logger.error(
+                    "CONTROLLER",
+                    f"功能开发任务失败: {result.error}"
+                )
+                return False
 
-        return False
+            # 如果有生成的代码，保存到文件
+            if result.code:
+                # 确定输出文件路径
+                output_file = WORKSPACE / f".feature_{task['id']}.py"
+
+                with open(output_file, 'w', encoding='utf-8') as f:
+                    f.write(result.code)
+
+                self.logger.success(
+                    "CONTROLLER",
+                    f"功能代码已生成: {output_file}"
+                )
+
+                # Git 提交功能代码
+                commit_hash = self.git.commit(
+                    f"feat(feature): {task['title']}\n\n"
+                    f"Task ID: {task['id']}\n"
+                    f"Method: 三轮协作 (zhipu → kimi → zhipu)"
+                )
+
+                # E2E 验证
+                verified, message = self.verifier.verify_syntax(result.code)
+
+                if verified:
+                    self.logger.success(
+                        "CONTROLLER",
+                        f"功能开发任务验证通过: {message}"
+                    )
+
+                    # 记录关键决策
+                    self.context.add_key_decision(
+                        f"Feature {task['id']} 开发完成，提交: {commit_hash[:7]}"
+                    )
+
+                    return True
+                else:
+                    self.logger.warning(
+                        "CONTROLLER",
+                        f"功能开发验证失败: {message}"
+                    )
+                    return False
+            else:
+                self.logger.warning(
+                    "CONTROLLER",
+                    "功能开发任务未生成代码"
+                )
+                return False
+
+        except Exception as e:
+            self.logger.error(
+                "CONTROLLER",
+                f"功能开发任务异常: {traceback.format_exc()}"
+            )
+            return False
 
     def _execute_generic_task(self, task: Dict) -> bool:
         """执行通用任务"""
-        self.logger.info("CONTROLLER", "执行通用任务")
+        self.logger.info("CONTROLLER", f"执行通用任务: {task['id']} - {task['title']}")
 
-        # 占位实现
+        # 对于通用任务，尝试根据描述判断类型
+        description = task.get("description", "").lower()
+        title = task.get("title", "").lower()
+
+        # 如果包含"修复"、"bug"、"错误"等关键词，按 bugfix 处理
+        if any(keyword in description or keyword in title for keyword in
+               ["修复", "fix", "bug", "错误", "error", "异常", "异常"]):
+            self.logger.info("CONTROLLER", "识别为 Bug 修复任务")
+            return self._execute_bugfix_task(task)
+
+        # 如果包含"实现"、"添加"、"新功能"、"开发"等关键词，按 feature 处理
+        if any(keyword in description or keyword in title for keyword in
+               ["实现", "添加", "新功能", "开发", "develop", "feature", "新增"]):
+            self.logger.info("CONTROLLER", "识别为功能开发任务")
+            return self._execute_feature_task(task)
+
+        # 默认：记录日志，返回 False（需要手动处理）
+        self.logger.warning(
+            "CONTROLLER",
+            f"通用任务类型未明确，无法自动执行: {task['title']}"
+        )
+
         return False
 
 
