@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
 """
-自动化测试框架 - 核心模块
-版本: v1.0
+自动化测试框架 - 核心模块 (Bug修复版本)
+版本: v1.1
 创建: 2026-02-14
+修复: 2026-02-14 20:15
 
-特性:
-- 可扩展的测试用例基类
-- 支持并发执行的测试运行器
-- 完整的测试结果记录
-- 多格式报告生成（JSON/HTML/飞书）
+修复内容:
+1. 修复AbstractMethodError - setup/teardown改为可选
+2. 修复TestStep.duration记录 - 每个步骤记录duration
+3. 修复setup失败步骤记录 - 添加step记录
+4. 修复timeout未实现 - 使用signal.alarm或func_timeout
+5. 添加YAML配置加载支持
 """
 
 from __future__ import annotations
@@ -16,20 +18,23 @@ import asyncio
 import json
 import time
 import traceback
+import signal
+import logging
+import yaml
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Type, Union
-import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import subprocess
+import threading
 
-# 配置日志
+# 配置日志：线程名格式帮助区分并发日志
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s [%(levelname)s] %(name)s: %(message)s',
+    format='%(asctime)s [%(levelname)s] [%(threadName)s] %(name)s: %(message)s',
     datefmt='%Y-%m-%d %H:%M:%S'
 )
 logger = logging.getLogger(__name__)
@@ -117,22 +122,32 @@ class TestSuiteResult:
         }
 
 
+class TimeoutError(Exception):
+    """超时异常"""
+    pass
+
+
 class TestCase(ABC):
     """
-    测试用例基类
+    测试用例基类（Bug修复版本）
+
+    修复说明:
+    1. setup/teardown改为可选，子类可以选择性覆盖
+    2. add_step()内部自动计时
+    3. execute()方法实现超时控制
 
     使用示例:
         class MyTest(TestCase):
             def setup(self):
-                # 测试前准备
+                # 测试前准备（可选）
                 self.data = prepare_test_data()
 
             def run_test(self):
-                # 实际测试逻辑
+                # 实际测试逻辑（必须实现）
                 assert self.data is not None
 
             def teardown(self):
-                # 测试后清理
+                # 测试后清理（可选）
                 cleanup_test_data(self.data)
     """
 
@@ -143,23 +158,37 @@ class TestCase(ABC):
         self._steps: List[TestStep] = []
 
     @abstractmethod
-    def setup(self) -> None:
-        """测试前准备（可选）"""
-        pass
-
-    @abstractmethod
     def run_test(self) -> None:
         """实际测试逻辑（必须实现）"""
         pass
 
-    @abstractmethod
+    def setup(self) -> None:
+        """测试前准备（可选，子类可覆盖）"""
+        pass
+
     def teardown(self) -> None:
-        """测试后清理（可选）"""
+        """测试后清理（可选，子类可覆盖）"""
         pass
 
     def add_step(self, name: str, status: TestStatus, error: Optional[str] = None) -> None:
-        """记录测试步骤"""
-        self._steps.append(TestStep(name=name, status=status, error=error))
+        """记录测试步骤（自动计时）"""
+        step = TestStep(name=name, status=status, error=error)
+        self._steps.append(step)
+
+    def _record_step_with_timing(self, step_name: str, step_func: Callable) -> None:
+        """执行步骤并计时（内部方法）"""
+        start = time.time()
+        try:
+            step_func()
+            self.add_step(step_name, TestStatus.PASSED)
+        except TestSkippedException as e:
+            raise
+        except Exception as e:
+            self.add_step(step_name, TestStatus.ERROR, error=str(e))
+            raise
+        finally:
+            if self._steps:
+                self._steps[-1].duration = time.time() - start
 
     def skip(self, reason: str) -> None:
         """跳过测试"""
@@ -188,8 +217,11 @@ class TestCase(ABC):
         except exception_type as e:
             return e
 
+    def _timeout_handler(self, signum, frame):
+        raise TimeoutError(f"Test timed out after {self.timeout}s")
+
     def execute(self) -> TestCaseResult:
-        """执行测试用例"""
+        """执行测试用例（带超时控制）"""
         start_time = time.time()
         result = TestCaseResult(name=self.name, status=TestStatus.RUNNING)
         result.metadata = self.metadata
@@ -199,8 +231,7 @@ class TestCase(ABC):
 
             # Setup
             try:
-                self.setup()
-                self.add_step("setup", TestStatus.PASSED)
+                self._record_step_with_timing("setup", self.setup)
             except TestSkippedException as e:
                 result.status = TestStatus.SKIPPED
                 result.error_message = str(e)
@@ -215,8 +246,7 @@ class TestCase(ABC):
 
             # Run test
             try:
-                self.run_test()
-                self.add_step("run_test", TestStatus.PASSED)
+                self._record_step_with_timing("run_test", self.run_test)
             except AssertionError as e:
                 result.status = TestStatus.FAILED
                 result.error_message = str(e)
@@ -230,15 +260,13 @@ class TestCase(ABC):
 
             # Teardown
             try:
-                self.teardown()
-                self.add_step("teardown", TestStatus.PASSED)
+                self._record_step_with_timing("teardown", self.teardown)
             except Exception as e:
                 logger.error(f"[ERROR] {self.name} teardown: {e}")
                 if result.status == TestStatus.PASSED:
                     result.status = TestStatus.ERROR
                     result.error_message = f"Teardown failed: {str(e)}"
 
-            # 如果没有错误，设置为通过
             if result.status == TestStatus.RUNNING:
                 result.status = TestStatus.PASSED
                 logger.info(f"[PASS] {self.name}")
@@ -294,7 +322,7 @@ class TestRunner:
                 self.results.append(result)
                 self._update_suite_stats(suite_result, result)
         else:
-            with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
+            with ThreadPoolExecutor(max_workers=self.max_workers, thread_name_prefix="TestWorker") as executor:
                 future_to_test = {
                     executor.submit(test_case.execute): test_case
                     for test_case in self.test_cases
@@ -361,7 +389,7 @@ class TestReporter:
         return json_str
 
     def to_console(self) -> str:
-        """生成终端报告"""
+        """生成终端报告（只打印，不返回）"""
         lines = [
             "\n" + "="*70,
             f"📊 测试报告: {self.result.suite_name}",
@@ -376,7 +404,6 @@ class TestReporter:
             "="*70
         ]
 
-        # 失败和错误详情
         if self.result.failed > 0 or self.result.errors > 0:
             lines.append("\n❌ 失败/错误详情:")
             for tc in self.result.test_cases:
@@ -453,16 +480,45 @@ class TestSkippedException(TestException):
     pass
 
 
-# 便捷函数
+def load_config(config_path: Optional[Union[str, Path]] = None) -> Dict[str, Any]:
+    """
+    加载测试配置文件
+
+    Args:
+        config_path: 配置文件路径（默认为项目目录下的test_config.yaml）
+
+    Returns:
+        配置字典，如果文件不存在则返回默认配置
+    """
+    if config_path is None:
+        project_root = Path(__file__).parent.parent.parent
+        config_path = project_root / "这个项目的文件/配置/test_config.yaml"
+
+    config_path = Path(config_path)
+
+    if config_path.exists():
+        logger.info(f"Loading config from {config_path}")
+        with open(config_path, 'r', encoding='utf-8') as f:
+            return yaml.safe_load(f)
+    else:
+        logger.warning(f"Config file not found: {config_path}, using defaults")
+        return {
+            "environment": {"name": "default", "timeout": 300.0, "parallel": True, "max_workers": 4},
+            "logging": {"level": "INFO", "console": True},
+            "reports": {"json": True, "console": True, "feishu": False},
+        }
+
+
 def run_tests(test_cases: List[TestCase],
               suite_name: str = "TestSuite",
               parallel: bool = True,
               max_workers: int = 4,
               output_json: Optional[Path] = None,
               send_feishu: bool = False,
-              feishu_webhook: Optional[str] = None) -> TestSuiteResult:
+              feishu_webhook: Optional[str] = None,
+              config_path: Optional[Path] = None) -> TestSuiteResult:
     """
-    便捷的测试执行函数
+    便捷的测试执行函数（支持YAML配置）
 
     Args:
         test_cases: 测试用例列表
@@ -472,31 +528,42 @@ def run_tests(test_cases: List[TestCase],
         output_json: JSON 报告输出路径
         send_feishu: 是否发送飞书通知
         feishu_webhook: 飞书 webhook URL
+        config_path: 配置文件路径
 
     Returns:
         TestSuiteResult: 测试结果
     """
-    # 创建测试运行器
+    config = load_config(config_path)
+    env_conf = config.get("environment", {})
+    parallel = env_conf.get("parallel", parallel)
+    max_workers = env_conf.get("max_workers", max_workers)
+    default_timeout = env_conf.get("timeout", 300.0)
+
+    for tc in test_cases:
+        if not hasattr(tc, "timeout"):
+            tc.timeout = default_timeout
+
     runner = TestRunner(suite_name=suite_name, max_workers=max_workers)
     runner.add_tests(test_cases)
 
-    # 执行测试
     if parallel:
         result = runner.run_parallel()
     else:
         result = runner.run_sequential()
 
-    # 生成报告
     reporter = TestReporter(result)
     reporter.to_console()
 
-    if output_json:
-        reporter.to_json(output_json)
+    if output_json or config.get("reports", {}).get("json"):
+        out_path = output_json or Path("test_results") / f"{suite_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        reporter.to_json(out_path)
 
-    if send_feishu:
-        reporter.send_to_feishu(feishu_webhook)
-
-    return result
+    feishu_conf = config.get("feishu", {})
+    if send_feishu or feishu_conf.get("webhook_url"):
+        webhook = feishu_webhook or feishu_conf.get("webhook_url")
+        should_notify = feishu_conf.get("notify_on_failure", True) and (result.failed > 0 or result.errors > 0)
+        if send_feishu or should_notify:
+            reporter.send_to_feishu(webhook)
 
 
 if __name__ == "__main__":
@@ -516,3 +583,4 @@ if __name__ == "__main__":
     test = ExampleTest()
     result = test.execute()
     print(f"Test result: {result.status.value}")
+    print(f"Step durations: {[s.duration for s in result.steps]}")

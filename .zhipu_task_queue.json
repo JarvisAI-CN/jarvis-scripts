@@ -1,6 +1,6 @@
 [
   {
-    "id": "TASK-20260214195122-1",
+    "id": "TASK-20260214202558-1",
     "title": "自主编程项目-第二轮",
     "description": "从TODO.md自动提取的任务：自主编程项目-第二轮",
     "category": "coding",
@@ -8,7 +8,7 @@
     "estimated_time_minutes": 30,
     "value_score": 30.0,
     "source": "TODO.md",
-    "created_at": "2026-02-14T19:51:22.108576",
+    "created_at": "2026-02-14T20:25:58.677033",
     "started_at": null,
     "completed_at": null,
     "status": "pending",
@@ -16,7 +16,23 @@
     "git_commit": null
   },
   {
-    "id": "TASK-20260214195122-3",
+    "id": "TASK-20260214202558-2",
+    "title": "ImageHub技术分享项目",
+    "description": "从TODO.md自动提取的任务：ImageHub技术分享项目",
+    "category": "coding",
+    "priority": 0,
+    "estimated_time_minutes": 30,
+    "value_score": 50.0,
+    "source": "TODO.md",
+    "created_at": "2026-02-14T20:25:58.677063",
+    "started_at": null,
+    "completed_at": null,
+    "status": "pending",
+    "result": null,
+    "git_commit": null
+  },
+  {
+    "id": "TASK-20260214202558-3",
     "title": "WhatsApp语音识别处理项目",
     "description": "从TODO.md自动提取的任务：WhatsApp语音识别处理项目",
     "category": "coding",
@@ -24,7 +40,7 @@
     "estimated_time_minutes": 30,
     "value_score": 50.0,
     "source": "TODO.md",
-    "created_at": "2026-02-14T19:51:22.108632",
+    "created_at": "2026-02-14T20:25:58.677091",
     "started_at": null,
     "completed_at": null,
     "status": "pending",

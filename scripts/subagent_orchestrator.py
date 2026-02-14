@@ -94,9 +94,6 @@ class SubagentOrchestrator:
                 cwd=self.workspace
             )
 
-            # 清理临时文件
-            os.unlink(task_file)
-
             if result.returncode == 0:
                 stdout = result.stdout
                 
