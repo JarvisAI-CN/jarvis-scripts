@@ -26,7 +26,7 @@ def get_project_info(project_name):
             content = f.read()
             
             # 提取进度
-            prog_match = re.search(r'(?:进度|完成度|progress|completion)[ \*\-_]*:\s*(\d+%)', content, re.I)
+            prog_match = re.search(r'(?:进度|完成度|完成率|progress|completion)[ \*\-_]*:\s*(\d+%)', content, re.I)
             
             # 如果没找到，尝试从状态中提取百分比
             if not prog_match:
