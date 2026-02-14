@@ -92,24 +92,17 @@
 - [ ] 检查磁盘空间 (`df -h /home/ubuntu/123pan`)
 - [ ] 检查最新备份时间 (`ls -lt /home/ubuntu/123pan/备份/ | head -5`)
 
-### API健康监控 ⭐⭐⭐⭐⭐ (已禁用 - 待修复)
-**状态**: ⚠️ 已禁用 - 脚本使用错误的命令格式
-**问题**: `openclaw agent` 不支持 `--model` 参数
-**任务**: 待重构监控脚本（见 TODO.md 第三象限）
-**原计划频率**: 每30分钟 (Cron: `*/30 * * * *`)
+### API健康监控 ⭐⭐⭐⭐⭐
+**状态**: 🟢 运行正常 (V2.0)
+**功能**: 通过 `models status` 监控 OAuth 状态
+**频率**: 每小时执行 (通过 `auto_maintain.sh`)
 
 **执行步骤**:
-1. 测试所有模型可用性（gemini-3-flash, claude-opus-4-5-thinking, kimi-k2.5, glm-4.7）
-2. 记录连续失败次数和最后可用时间
-3. 检查预警条件（连续失败≥3次 或 超过1小时不可用）
-4. 如果所有模型都不可用：自动重启Gateway服务
+1. 检查 Google/Zhipu 等模型可用性
+2. 记录连续失败次数
+3. 发现异常自动写入 `.api_health_alert.json`
+4. 连续失败≥2次自动重启Gateway
 5. 保存状态到 `.api_health_state.json`
-6. 如有预警：写入 `.api_health_alert.json`
-
-**状态文件**:
-- 运行状态: `.api_health_state.json`
-- 预警信息: `.api_health_alert.json`
-- 日志: `logs/api_health.log`
 
 **心跳检查集成**:
 每次心跳时读取 `.api_health_alert.json`，如有预警立即通知主人
