@@ -23,6 +23,10 @@ from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass, asdict
 from enum import Enum
 import threading
+try:
+    from scripts.subagent_orchestrator import SubagentOrchestrator
+except ImportError:
+    from subagent_orchestrator import SubagentOrchestrator
 
 # 配置
 WORKSPACE = Path("/home/ubuntu/.openclaw/workspace")
@@ -84,6 +88,9 @@ class ZhipuContinuousScheduler:
         # 加载或初始化
         self.task_queue = self._load_task_queue()
         self.resource_state = self._load_resource_state()
+
+        # 初始化协调器
+        self.orchestrator = SubagentOrchestrator(self.workspace)
 
         # 工作状态
         self.is_working = False
@@ -172,47 +179,69 @@ class ZhipuContinuousScheduler:
 
         tasks = []
 
-        # 解析第一象限（重要且紧急）
-        lines = content.split('\n')
-        current_section = None
+        # 使用正则表达式分割 ## 标题，确保只匹配二级标题
+        import re
+        sections = re.split(r'\n## ', '\n' + content)
+        
+        for section in sections:
+            priority_name = 'medium'
+            if '第一象限' in section:
+                priority_name = 'critical'
+            elif '第二象限' in section:
+                priority_name = 'high'
+            elif '第三象限' in section:
+                priority_name = 'medium'
+            elif '第四象限' in section:
+                priority_name = 'low'
+            else:
+                continue
 
-        for line in lines:
-            if '第一象限' in line:
-                current_section = 'critical'
-            elif '第二象限' in line:
-                current_section = 'high'
-            elif '第三象限' in line:
-                current_section = 'medium'
-            elif '第四象限' in line:
-                current_section = 'low'
+            # 检测任务块
+            lines = section.split('\n')
+            for i, line in enumerate(lines):
+                # 匹配 [[PARA/Projects/...]] 格式
+                if '[[' in line and 'PARA/Projects' in line:
+                    # 检查上下文是否有“进行中”或“🔄”
+                    context = line
+                    if i + 1 < len(lines):
+                        context += " " + lines[i+1]
+                    if i + 2 < len(lines):
+                        context += " " + lines[i+2]
 
-            # 检测任务（包含 [[ 链接）
-            if '[[' in line and 'PARA/Projects' in line:
-                # 提取项目名称
-                start = line.find('[[') + 2
-                end = line.find(']')
-                if start > 1 and end > start:
-                    project_path = line[start:end]
-                    project_name = project_path.split('/')[-1].replace('README.md|', '').replace('|', '')
+                    if '进行中' in context or '🔄' in context:
+                        # 提取项目路径和名称
+                        # 格式可能为 [[path|name]] 或 [[path]]
+                        try:
+                            start = line.find('[[') + 2
+                            end = line.find(']]')
+                            link_content = line[start:end]
+                            
+                            if '|' in link_content:
+                                project_path, project_name = link_content.split('|', 1)
+                            else:
+                                project_path = link_content
+                                project_name = project_path.split('/')[-1].replace('.md', '')
 
-                    # 跳过已完成的项目
-                    if '进行中' not in line and '🔄' not in line:
-                        continue
+                            # 避免重复添加已在队列中的任务
+                            if any(t.title == project_name for t in self.task_queue):
+                                continue
 
-                    # 创建任务
-                    task = ContinuousTask(
-                        id=f"TASK-{datetime.now().strftime('%Y%m%d%H%M%S')}-{len(tasks)}",
-                        title=project_name,
-                        description=f"从TODO.md自动提取的任务：{project_name}",
-                        category=self._infer_category(line),
-                        priority=self._infer_priority(current_section),
-                        estimated_time_minutes=30,
-                        value_score=self._calculate_value_score(line),
-                        source="TODO.md",
-                        created_at=datetime.now().isoformat()
-                    )
+                            # 创建任务
+                            task = ContinuousTask(
+                                id=f"TASK-{datetime.now().strftime('%Y%m%d%H%M%S')}-{len(tasks)}",
+                                title=project_name,
+                                description=f"从TODO.md自动提取的任务：{project_name}",
+                                category=self._infer_category(context),
+                                priority=self._infer_priority(priority_name),
+                                estimated_time_minutes=30,
+                                value_score=self._calculate_value_score(context),
+                                source="TODO.md",
+                                created_at=datetime.now().isoformat()
+                            )
 
-                    tasks.append(task)
+                            tasks.append(task)
+                        except Exception as e:
+                            print(f"⚠️  解析任务行失败: {line} - {e}")
 
         return tasks
 
@@ -301,14 +330,11 @@ class ZhipuContinuousScheduler:
         self.current_task = task
 
         print(f"\n{'='*60}")
-        print(f"🚀 开始执行任务")
+        print(f"🚀 开始执行任务: {task.id}")
         print(f"{'='*60}")
         print(f"📋 任务标题: {task.title}")
-        print(f"📝 任务描述: {task.description}")
         print(f"🏷️  任务类别: {task.category.value}")
         print(f"⭐ 价值评分: {task.value_score}")
-        print(f"⏱️  预计耗时: {task.estimated_time_minutes} 分钟")
-        print(f"📅 创建时间: {task.created_at}")
         print(f"{'='*60}\n")
 
         # 更新任务状态
@@ -319,29 +345,36 @@ class ZhipuContinuousScheduler:
         # 记录开始日志
         self._log_work(task, "started", "任务开始执行")
 
-        # 根据任务类别执行不同的处理
+        # 准备任务字典供协调器使用
+        task_dict = {
+            "id": task.id,
+            "title": task.title,
+            "description": task.description
+        }
+
         try:
-            if task.category == TaskCategory.CODING:
-                success = self._execute_coding_task(task)
-            elif task.category == TaskCategory.OPTIMIZATION:
-                success = self._execute_optimization_task(task)
-            elif task.category == TaskCategory.ANALYSIS:
-                success = self._execute_analysis_task(task)
-            elif task.category == TaskCategory.DOCUMENTATION:
-                success = self._execute_documentation_task(task)
-            elif task.category == TaskCategory.TESTING:
-                success = self._execute_testing_task(task)
-            elif task.category == TaskCategory.REFACTORING:
-                success = self._execute_refactoring_task(task)
+            # 根据任务类别选择协调器方法
+            if task.category in [TaskCategory.CODING, TaskCategory.OPTIMIZATION, TaskCategory.REFACTORING]:
+                result = self.orchestrator.execute_feature_task(task_dict)
+            elif task.category in [TaskCategory.TESTING]:
+                result = self.orchestrator.execute_bugfix_task(task_dict) # 测试任务也使用三轮协作
             else:
-                success = self._execute_generic_task(task)
+                # 通用任务直接调用智谱
+                result = self.orchestrator._call_subagent(
+                    model="zhipu/glm-4.7",
+                    task_context=task_dict,
+                    prompt_template="请处理以下任务：\n{description}",
+                    timeout=300
+                )
 
             # 更新任务状态
-            if success:
+            if result.success:
                 task.status = "completed"
                 task.completed_at = datetime.now().isoformat()
+                task.result = result.output
+                task.git_commit = result.commit_hash
 
-                # Git提交
+                # 如果代码有变动，进行 Git 提交
                 commit_hash = self._commit_task_result(task)
                 task.git_commit = commit_hash
 
@@ -354,82 +387,28 @@ class ZhipuContinuousScheduler:
                 self._save_resource_state()
 
                 print(f"\n✅ 任务完成: {task.title}")
-                print(f"📊 已完成任务数: {self.resource_state['total_tasks_completed']}")
-                print(f"⏱️  累计工作时长: {self.resource_state['total_work_time_minutes']} 分钟")
+                return True
 
             else:
                 task.status = "failed"
                 task.completed_at = datetime.now().isoformat()
-                self._log_work(task, "failed", "任务执行失败")
-                print(f"\n❌ 任务失败: {task.title}")
-
-            self._save_task_queue()
-            return success
+                task.result = result.error
+                self._log_work(task, "failed", f"执行失败: {result.error}")
+                print(f"\n❌ 任务失败: {task.title} - {result.error}")
+                return False
 
         except Exception as e:
             task.status = "failed"
             task.completed_at = datetime.now().isoformat()
             task.result = f"异常: {str(e)}"
             self._log_work(task, "error", f"执行异常: {str(e)}")
-            self._save_task_queue()
             print(f"\n❌ 任务异常: {task.title} - {str(e)}")
             return False
 
         finally:
+            self._save_task_queue()
             self.is_working = False
             self.current_task = None
-
-    def _execute_coding_task(self, task: ContinuousTask) -> bool:
-        """执行编码任务"""
-        # 这里应该调用智谱进行编码
-        # 简化：返回True表示成功
-        result = f"编码任务: {task.title}\n需要使用智谱GLM-4.7进行开发"
-        task.result = result
-        print(f"💻 执行编码任务")
-        print(f"📄 说明: 此任务需要启动智谱子会话完成编码工作")
-        return True
-
-    def _execute_optimization_task(self, task: ContinuousTask) -> bool:
-        """执行优化任务"""
-        result = f"优化任务: {task.title}\n需要使用智谱GLM-4.7进行代码优化"
-        task.result = result
-        print(f"⚡ 执行优化任务")
-        return True
-
-    def _execute_analysis_task(self, task: ContinuousTask) -> bool:
-        """执行分析任务"""
-        result = f"分析任务: {task.title}\n需要使用智谱GLM-4.7进行深度分析"
-        task.result = result
-        print(f"🔍 执行分析任务")
-        return True
-
-    def _execute_documentation_task(self, task: ContinuousTask) -> bool:
-        """执行文档任务"""
-        result = f"文档任务: {task.title}\n需要使用智谱GLM-4.7生成文档"
-        task.result = result
-        print(f"📚 执行文档任务")
-        return True
-
-    def _execute_testing_task(self, task: ContinuousTask) -> bool:
-        """执行测试任务"""
-        result = f"测试任务: {task.title}\n需要使用智谱GLM-4.7进行测试"
-        task.result = result
-        print(f"🧪 执行测试任务")
-        return True
-
-    def _execute_refactoring_task(self, task: ContinuousTask) -> bool:
-        """执行重构任务"""
-        result = f"重构任务: {task.title}\n需要使用智谱GLM-4.7进行代码重构"
-        task.result = result
-        print(f"🔧 执行重构任务")
-        return True
-
-    def _execute_generic_task(self, task: ContinuousTask) -> bool:
-        """执行通用任务"""
-        result = f"通用任务: {task.title}\n需要使用智谱GLM-4.7处理"
-        task.result = result
-        print(f"⚙️  执行通用任务")
-        return True
 
     def _commit_task_result(self, task: ContinuousTask) -> Optional[str]:
         """提交任务结果到Git"""

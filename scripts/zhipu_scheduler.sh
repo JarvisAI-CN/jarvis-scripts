@@ -27,7 +27,7 @@ case "$1" in
         fi
 
         # 后台启动调度器
-        nohup python3 "$SCHEDULER" run > "$LOG_DIR/zhipu_scheduler.log" 2>&1 &
+        nohup python3 -u "$SCHEDULER" run > "$LOG_DIR/zhipu_scheduler.log" 2>&1 &
 
         # 保存PID
         echo $! > "$PID_FILE"

@@ -37,15 +37,16 @@ class SubagentOrchestrator:
         self.workspace = workspace
         self.logger = logger
 
-        # 模型配置
-        self.models = {
-            "coder": "zhipu/glm-4.7",      # 编程主力
-            "tester": "nvidia/moonshotai/kimi-k2.5",  # 测试主力
-            "fixer": "zhipu/glm-4.7"       # 修复主力
+        # 模型配置 - 映射到具体的 Agent ID
+        self.agent_ids = {
+            "coder": "zhipu-coder",      # 编程主力
+            "tester": "kimi-tester",     # 测试主力
+            "fixer": "zhipu-coder"       # 修复主力
         }
 
     def log(self, level: str, module: str, message: str):
         """日志记录"""
+        print(f"[{level}] [{module}] {message}")
         if self.logger:
             if level == "INFO":
                 self.logger.info(module, message)
@@ -58,7 +59,7 @@ class SubagentOrchestrator:
 
     def _call_subagent(
         self,
-        model: str,
+        agent_id: str,
         task_context: Dict,
         prompt_template: str,
         timeout: int = 300
@@ -68,28 +69,15 @@ class SubagentOrchestrator:
         # 构建完整提示
         prompt = prompt_template.format(**task_context)
 
-        self.log("INFO", "ORCHESTRATOR", f"调用模型 {model} 执行任务")
+        self.log("INFO", "ORCHESTRATOR", f"调用 Agent {agent_id} 执行任务")
 
-        # 使用 openclaw agent --local 执行
+        # 使用 openclaw agent 执行
         try:
-            # 创建临时文件保存任务描述
-            with tempfile.NamedTemporaryFile(
-                mode='w',
-                suffix='.json',
-                delete=False
-            ) as f:
-                json.dump({
-                    "model": model,
-                    "task": task_context,
-                    "timestamp": datetime.now().isoformat()
-                }, f, indent=2, ensure_ascii=False)
-                task_file = f.name
-
-            # 构建命令 - 移除 --local，通过 Gateway 发送，确保会话完全隔离
+            # 构建命令
             cmd = [
                 "openclaw",
                 "agent",
-                "--agent", "main",
+                "--agent", agent_id,
                 "--session-id", f"auto-prog-{task_context.get('task_id', 'generic')}-{datetime.now().strftime('%H%M%S')}",
                 "--message", prompt,
                 "--thinking", "medium",
@@ -236,7 +224,7 @@ TEST_STEPS: [测试步骤]
 """
 
         round1_result = self._call_subagent(
-            model=self.models["coder"],
+            agent_id=self.agent_ids["coder"],
             task_context=context,
             prompt_template=round1_prompt,
             timeout=300
@@ -287,7 +275,7 @@ VERDICT: [可以通过第二轮/需要返回第一轮修复]
 """
 
         round2_result = self._call_subagent(
-            model=self.models["tester"],
+            agent_id=self.agent_ids["tester"],
             task_context=context,
             prompt_template=round2_prompt,
             timeout=180
@@ -339,7 +327,7 @@ TEST_PLAN: [如何验证修复]
         }
 
         round3_result = self._call_subagent(
-            model=self.models["fixer"],
+            agent_id=self.agent_ids["fixer"],
             task_context=round3_context,
             prompt_template=round3_prompt,
             timeout=240
@@ -414,7 +402,7 @@ DEPENDENCIES: [依赖的外部模块或库]
 """
 
         round1_result = self._call_subagent(
-            model=self.models["coder"],
+            agent_id=self.agent_ids["coder"],
             task_context=context,
             prompt_template=round1_prompt,
             timeout=360
@@ -468,7 +456,7 @@ VERDICT: [可以通过第二轮/需要返回第一轮修改]
 """
 
         round2_result = self._call_subagent(
-            model=self.models["tester"],
+            agent_id=self.agent_ids["tester"],
             task_context=context,
             prompt_template=round2_prompt,
             timeout=240
@@ -523,7 +511,7 @@ FINAL_TEST_PLAN: [最终测试方案]
         }
 
         round3_result = self._call_subagent(
-            model=self.models["fixer"],
+            agent_id=self.agent_ids["fixer"],
             task_context=round3_context,
             prompt_template=round3_prompt,
             timeout=300
