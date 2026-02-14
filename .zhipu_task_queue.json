@@ -1,18 +1,1 @@
-[
-  {
-    "id": "TASK-20260214225444-1",
-    "title": "自主编程项目-第二轮",
-    "description": "从TODO.md自动提取的任务：自主编程项目-第二轮",
-    "category": "coding",
-    "priority": 0,
-    "estimated_time_minutes": 30,
-    "value_score": 30.0,
-    "source": "TODO.md",
-    "created_at": "2026-02-14T22:54:44.910917",
-    "started_at": null,
-    "completed_at": null,
-    "status": "pending",
-    "result": null,
-    "git_commit": null
-  }
-]
+[]
