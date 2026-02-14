@@ -85,14 +85,16 @@ class SubagentOrchestrator:
                 }, f, indent=2, ensure_ascii=False)
                 task_file = f.name
 
-            # 构建命令
+            # 构建命令 - 移除 --local，通过 Gateway 发送，确保会话完全隔离
             cmd = [
                 "openclaw",
                 "agent",
-                "--local",
+                "--agent", "main",
+                "--session-id", f"auto-prog-{task_context.get('task_id', 'generic')}-{datetime.now().strftime('%H%M%S')}",
                 "--message", prompt,
                 "--thinking", "medium",
-                "--timeout", str(timeout)
+                "--timeout", str(timeout),
+                "--json"
             ]
 
             # 执行
@@ -108,7 +110,23 @@ class SubagentOrchestrator:
             os.unlink(task_file)
 
             if result.returncode == 0:
-                output = result.stdout
+                stdout = result.stdout
+                
+                # 如果使用了 --json，解析 JSON 获取 reply
+                if "--json" in cmd:
+                    try:
+                        # 找到第一个 { 符号，跳过前面的日志头
+                        json_start = stdout.find('{')
+                        if json_start != -1:
+                            json_data = json.loads(stdout[json_start:])
+                            output = json_data.get("reply", "")
+                        else:
+                            output = stdout
+                    except Exception as e:
+                        self.log("WARNING", "ORCHESTRATOR", f"JSON 解析失败: {e}")
+                        output = stdout
+                else:
+                    output = stdout
 
                 # 尝试提取代码块
                 code = self._extract_code(output)
