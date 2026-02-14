@@ -968,24 +968,70 @@ class AutonomousController:
             return False
 
     def _execute_generic_task(self, task: Dict) -> bool:
-        """执行通用任务"""
+        """执行通用任务（改进的类型检测）"""
         self.logger.info("CONTROLLER", f"执行通用任务: {task['id']} - {task['title']}")
 
-        # 对于通用任务，尝试根据描述判断类型
+        # 优先检查type字段（最可靠）
+        task_type = task.get("type", "").lower()
+
+        type_mapping = {
+            "bugfix": "bugfix",
+            "feature": "feature",
+            "refactor": "feature",
+            "testing": "testing",
+            "maintenance": "maintenance"
+        }
+
+        if task_type in type_mapping:
+            detected_type = type_mapping[task_type]
+            self.logger.info("CONTROLLER", f"通过type字段识别为: {detected_type}")
+
+            if detected_type == "bugfix":
+                return self._execute_bugfix_task(task)
+            elif detected_type in ["feature", "refactor"]:
+                return self._execute_feature_task(task)
+            elif detected_type == "maintenance":
+                return self._execute_maintenance_task(task)
+            elif detected_type == "testing":
+                self.logger.info("CONTROLLER", "识别为测试任务")
+                return True  # 测试任务直接返回True
+
+        # 备用：改进的关键词检测
         description = task.get("description", "").lower()
         title = task.get("title", "").lower()
 
-        # 如果包含"修复"、"bug"、"错误"等关键词，按 bugfix 处理
-        if any(keyword in description or keyword in title for keyword in
-               ["修复", "fix", "bug", "错误", "error", "异常", "异常"]):
-            self.logger.info("CONTROLLER", "识别为 Bug 修复任务")
-            return self._execute_bugfix_task(task)
+        # 扩展的关键词列表
+        bugfix_keywords = [
+            "修复", "fix", "bug", "错误", "error", "异常", "exception",
+            "解决", "solve", "diagnosis", "诊断", "排查"
+        ]
 
-        # 如果包含"实现"、"添加"、"新功能"、"开发"等关键词，按 feature 处理
-        if any(keyword in description or keyword in title for keyword in
-               ["实现", "添加", "新功能", "开发", "develop", "feature", "新增"]):
-            self.logger.info("CONTROLLER", "识别为功能开发任务")
-            return self._execute_feature_task(task)
+        feature_keywords = [
+            "实现", "implement", "添加", "add", "新功能", "new feature",
+            "开发", "develop", "创建", "create", "功能", "function",
+            "优化", "optimize", "改进", "improve"
+        ]
+
+        maintenance_keywords = [
+            "监控", "monitor", "维护", "maintain", "检查", "check",
+            "更新", "update", "备份", "backup", "部署", "deploy"
+        ]
+
+        # 检测优先级：bugfix > feature > maintenance
+        for keyword in bugfix_keywords:
+            if keyword in description or keyword in title:
+                self.logger.info("CONTROLLER", "通过关键词识别为 Bug 修复任务")
+                return self._execute_bugfix_task(task)
+
+        for keyword in feature_keywords:
+            if keyword in description or keyword in title:
+                self.logger.info("CONTROLLER", "通过关键词识别为功能开发任务")
+                return self._execute_feature_task(task)
+
+        for keyword in maintenance_keywords:
+            if keyword in description or keyword in title:
+                self.logger.info("CONTROLLER", "通过关键词识别为维护任务")
+                return self._execute_maintenance_task(task)
 
         # 默认：记录日志，返回 False（需要手动处理）
         self.logger.warning(
