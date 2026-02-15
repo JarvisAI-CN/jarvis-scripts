@@ -1,0 +1,28 @@
+import requests
+import hashlib
+import time
+import json
+
+BT_URL = "http://82.157.20.7:8888"
+BT_KEY = "N1WSP3iddQideRInbq515yXC8lOAfCDn"
+
+def get_token():
+    now = int(time.time())
+    token = hashlib.md5((str(now) + hashlib.md5(BT_KEY.encode()).hexdigest()).encode()).hexdigest()
+    return now, token
+
+def get_databases():
+    now, token = get_token()
+    url = f"{BT_URL}/data?action=GetDatabases"
+    data = {
+        "request_time": now,
+        "request_token": token,
+        "p": 1,
+        "limit": 100
+    }
+    r = requests.post(url, data=data)
+    return r.json()
+
+if __name__ == "__main__":
+    dbs = get_databases()
+    print(json.dumps(dbs, indent=2, ensure_ascii=False))

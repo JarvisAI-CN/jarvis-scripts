@@ -121,10 +121,11 @@
   - ThroughputTest: 吞吐量测试
   - ResourceUsageTest: 资源使用测试
 
-- **security_test.py** (⏳ 待开始): `这个项目的文件/代码/security_test.py`
+- **security_test.py** (✅ 已创建): `这个项目的文件/代码/security_test.py`
   - VulnerabilityScanner: 漏洞扫描器
   - ConfigAuditor: 配置审计器
   - PermissionChecker: 权限检查器
+  - DependencyChecker: 依赖检查器 (新)
 
 - **regression_test.py** (⏳ 待开始): `这个项目的文件/代码/regression_test.py`
   - FunctionalTest: 功能测试
