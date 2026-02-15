@@ -3,17 +3,22 @@
  * ========================================
  * 保质期管理系统 - 主页面（完整版）
  * 文件名: index.php
- * 版本: v2.0
+ * 版本: v1.1.0
  * 创建日期: 2026-02-15
  * ========================================
  * 功能说明：
- * 1. 扫码录入商品批次信息
+ * 1. 扫码录入商品批次信息 (含成功提示音)
  * 2. 动态添加/删除批次
  * 3. 商品查询和回显
  * 4. 批次到期状态提醒
- * 5. 数据统计和导出
+ * 5. 数据统计和导出 (AI 整理排序)
+ * 6. 在线一键升级功能
  * ========================================
  */
+
+// 升级配置
+define('APP_VERSION', '1.1.0');
+define('UPDATE_URL', 'https://raw.githubusercontent.com/JarvisAI-CN/expiry-management-system/main/');
 
 // 启动 Session
 session_start();
@@ -352,6 +357,54 @@ if (isset($_GET['api'])) {
         exit;
     }
     
+    // ========================================
+    // API 5: 检查更新
+    // ========================================
+    if ($action === 'check_upgrade') {
+        $latest_version_url = UPDATE_URL . 'VERSION.txt';
+        $latest_version = @file_get_contents($latest_version_url);
+        
+        if ($latest_version === false) {
+            echo json_encode(['success' => false, 'message' => '无法连接到更新服务器']);
+        } else {
+            $latest_version = trim($latest_version);
+            $has_update = version_compare($latest_version, APP_VERSION, '>');
+            echo json_encode([
+                'success' => true,
+                'current' => APP_VERSION,
+                'latest' => $latest_version,
+                'has_update' => $has_update
+            ]);
+        }
+        exit;
+    }
+
+    // ========================================
+    // API 6: 执行升级
+    // ========================================
+    if ($action === 'execute_upgrade') {
+        $files = ['index.php', 'db.php', 'install.php'];
+        $errors = [];
+        
+        foreach ($files as $file) {
+            $remote_content = @file_get_contents(UPDATE_URL . $file);
+            if ($remote_content !== false) {
+                if (!@file_put_contents(__DIR__ . '/' . $file, $remote_content)) {
+                    $errors[] = "无法写入 $file";
+                }
+            } else {
+                $errors[] = "无法下载 $file";
+            }
+        }
+        
+        if (empty($errors)) {
+            echo json_encode(['success' => true, 'message' => '升级成功！正在刷新页面...']);
+        } else {
+            echo json_encode(['success' => false, 'message' => implode(", ", $errors)]);
+        }
+        exit;
+    }
+
     // 未知的 API 请求
     echo json_encode([
         'success' => false,
@@ -682,9 +735,15 @@ if (isset($_GET['api'])) {
             <div class="d-flex justify-content-between align-items-center">
                 <div>
                     <h1><i class="bi bi-box-seam"></i> 保质期管理系统</h1>
-                    <div class="subtitle">扫码录入 · 批次管理 · 临期提醒</div>
+                    <div class="subtitle">
+                        扫码录入 · 批次管理 · 临期提醒 
+                        <span class="badge bg-white text-primary ms-2" id="versionTag">v<?php echo APP_VERSION; ?></span>
+                    </div>
                 </div>
                 <div class="d-flex gap-2">
+                    <button class="btn btn-info btn-sm text-white d-none" id="upgradeBtn">
+                        <i class="bi bi-cloud-arrow-up"></i> 发现新版本
+                    </button>
                     <button class="btn btn-warning btn-sm" id="exportBtn">
                         <i class="bi bi-file-earmark-spreadsheet"></i> 下载盘点表
                     </button>
@@ -1051,30 +1110,87 @@ if (isset($_GET['api'])) {
         }
         
         /**
-         * 播放提示音
+         * 播放提示音 (叮~)
          */
         function playBeep() {
             try {
-                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                const oscillator = audioContext.createOscillator();
-                const gainNode = audioContext.createGain();
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 
-                oscillator.connect(gainNode);
-                gainNode.connect(audioContext.destination);
+                // 第一个频率：短促清脆
+                const osc1 = audioCtx.createOscillator();
+                const gain1 = audioCtx.createGain();
+                osc1.type = 'sine';
+                osc1.frequency.setValueAtTime(1200, audioCtx.currentTime);
+                gain1.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gain1.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
                 
-                oscillator.frequency.value = 800;
-                oscillator.type = 'sine';
-                gainNode.gain.value = 0.1;
+                osc1.connect(gain1);
+                gain1.connect(audioCtx.destination);
                 
-                oscillator.start();
+                osc1.start();
+                osc1.stop(audioCtx.currentTime + 0.1);
+
+                // 第二个频率：略高的尾音
                 setTimeout(() => {
-                    oscillator.stop();
-                }, 100);
+                    const osc2 = audioCtx.createOscillator();
+                    const gain2 = audioCtx.createGain();
+                    osc2.type = 'sine';
+                    osc2.frequency.setValueAtTime(1600, audioCtx.currentTime);
+                    gain2.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                    gain2.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+                    
+                    osc2.connect(gain2);
+                    gain2.connect(audioCtx.destination);
+                    
+                    osc2.start();
+                    osc2.stop(audioCtx.currentTime + 0.2);
+                }, 50);
+
             } catch (e) {
-                // 忽略音频错误
+                console.warn('播放音效失败:', e);
             }
         }
         
+        // ========================================
+        // 升级功能
+        // ========================================
+        
+        /**
+         * 检查更新
+         */
+        async function checkUpgrade() {
+            try {
+                const response = await fetch('index.php?api=check_upgrade');
+                const data = await response.json();
+                
+                if (data.success && data.has_update) {
+                    const upgradeBtn = document.getElementById('upgradeBtn');
+                    upgradeBtn.classList.remove('d-none');
+                    upgradeBtn.innerHTML = `<i class="bi bi-cloud-arrow-up"></i> 升级到 ${data.latest}`;
+                    
+                    upgradeBtn.onclick = async () => {
+                        if (confirm(`确定要从 ${data.current} 升级到 ${data.latest} 吗？\n系统将自动从 GitHub 下载最新代码覆盖本地文件。`)) {
+                            upgradeBtn.disabled = true;
+                            upgradeBtn.innerHTML = `<i class="bi bi-hourglass-split"></i> 升级中...`;
+                            
+                            const execResp = await fetch('index.php?api=execute_upgrade');
+                            const execData = await execResp.json();
+                            
+                            if (execData.success) {
+                                showAlert(execData.message, 'success');
+                                setTimeout(() => window.location.reload(), 1500);
+                            } else {
+                                showAlert('升级失败: ' + execData.message, 'danger');
+                                upgradeBtn.disabled = false;
+                            }
+                        }
+                    };
+                }
+            } catch (error) {
+                console.log('检查更新失败，这可能是网络问题。');
+            }
+        }
+
         // ========================================
         // 商品查询功能
         // ========================================
@@ -1365,6 +1481,9 @@ if (isset($_GET['api'])) {
         // ========================================
         
         document.addEventListener('DOMContentLoaded', function() {
+            // 检查版本更新
+            checkUpgrade();
+
             // 默认添加一个批次行
             addBatchRow();
             
