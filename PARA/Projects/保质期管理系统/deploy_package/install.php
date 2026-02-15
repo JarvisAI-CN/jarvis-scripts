@@ -45,6 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
           `sku` VARCHAR(100) NOT NULL,
           `name` VARCHAR(200) NOT NULL,
+          `removal_buffer` INT(5) UNSIGNED DEFAULT 0,
           `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
           `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
           PRIMARY KEY (`id`),
@@ -80,11 +81,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           UNIQUE KEY `uk_key` (`s_key`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+        CREATE TABLE IF NOT EXISTS `logs` (
+          `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+          `user_id` INT(11) UNSIGNED,
+          `action` VARCHAR(100),
+          `details` TEXT,
+          `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+          PRIMARY KEY (`id`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
         -- 初始化默认设置
         INSERT IGNORE INTO `settings` (`s_key`, `s_value`) VALUES 
         ('ai_api_url', 'https://api.openai.com/v1'),
         ('ai_api_key', ''),
-        ('ai_model', 'gpt-3.5-turbo');
+        ('ai_model', 'gpt-4o'),
+        ('alert_email', ''),
+        ('alert_days', '3,7,15');
         ";
         
         // 执行多条 SQL

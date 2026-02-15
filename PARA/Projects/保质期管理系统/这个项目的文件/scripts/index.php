@@ -3,21 +3,22 @@
  * ========================================
  * 保质期管理系统 - 主页面（完整版）
  * 文件名: index.php
- * 版本: v1.2.0
+ * 版本: v2.0.1-alpha
  * 创建日期: 2026-02-15
  * ========================================
  * 功能说明：
- * 1. 权限控制: 仅登录用户可访问盘点功能
- * 2. 用户管理: 后台添加用户、无感重置密码
- * 3. AI 配置: 自定义 API 地址、Key 和模型
- * 4. 扫码录入: 成功提示音
- * 5. 数据导出: AI 整理排序
- * 6. 一键升级: 在线热更新
+ * 1. 提前下架: 支持设置每个商品提前 N 天提醒/下架
+ * 2. 智能化: 首页健康大盘可视化 (基于下架日期)
+ * 3. 安全化: 关键操作全程日志记录
+ * 4. 预警化: 支持配置 3/7/15 天自动预警
+ * 5. 权限控制: 仅登录用户可访问
+ * 6. 用户管理: 后台添加用户、无感重置密码
+ * 7. 一键升级: 在线热更新
  * ========================================
  */
 
 // 升级配置
-define('APP_VERSION', '1.2.0');
+define('APP_VERSION', '2.0.1-alpha');
 define('UPDATE_URL', 'https://raw.githubusercontent.com/JarvisAI-CN/expiry-management-system/main/');
 
 // 启动 Session
@@ -95,7 +96,7 @@ if (isset($_GET['api'])) {
         }
         
         // 使用预处理语句防止 SQL 注入
-        $stmt = $conn->prepare("SELECT id, sku, name, created_at FROM products WHERE sku = ? LIMIT 1");
+        $stmt = $conn->prepare("SELECT id, sku, name, removal_buffer, created_at FROM products WHERE sku = ? LIMIT 1");
         $stmt->bind_param("s", $sku);
         $stmt->execute();
         $result = $stmt->get_result();
@@ -103,6 +104,7 @@ if (isset($_GET['api'])) {
         if ($result->num_rows > 0) {
             $product = $result->fetch_assoc();
             $productId = $product['id'];
+            $buffer = (int)$product['removal_buffer'];
             
             // 查询该商品的所有批次
             $stmt_batch = $conn->prepare("
@@ -117,17 +119,20 @@ if (isset($_GET['api'])) {
             
             $batches = [];
             while ($batch = $batch_result->fetch_assoc()) {
-                // 计算到期天数
+                // 计算到期天数 (基于下架缓冲)
                 $expiryDate = $batch['expiry_date'];
+                $removalDate = date('Y-m-d', strtotime("$expiryDate - $buffer days"));
+                
                 $today = date('Y-m-d');
-                $daysToExpiry = (strtotime($expiryDate) - strtotime($today)) / 86400;
+                $daysToRemoval = (strtotime($removalDate) - strtotime($today)) / 86400;
                 
                 $batches[] = [
                     'id' => $batch['id'],
                     'expiry_date' => $expiryDate,
+                    'removal_date' => $removalDate,
                     'quantity' => (int)$batch['quantity'],
-                    'days_to_expiry' => (int)$daysToExpiry,
-                    'status' => $daysToExpiry < 0 ? 'expired' : ($daysToExpiry <= 30 ? 'warning' : 'normal')
+                    'days_to_removal' => (int)$daysToRemoval,
+                    'status' => $daysToRemoval < 0 ? 'expired' : ($daysToRemoval <= 30 ? 'warning' : 'normal')
                 ];
             }
             
@@ -137,7 +142,8 @@ if (isset($_GET['api'])) {
                 'product' => [
                     'id' => $product['id'],
                     'sku' => $product['sku'],
-                    'name' => $product['name']
+                    'name' => $product['name'],
+                    'removal_buffer' => $buffer
                 ],
                 'batches' => $batches,
                 'message' => '查询成功'
@@ -172,6 +178,7 @@ if (isset($_GET['api'])) {
         
         $sku = isset($data['sku']) ? trim($data['sku']) : '';
         $name = isset($data['name']) ? trim($data['name']) : '';
+        $buffer = isset($data['removal_buffer']) ? (int)$data['removal_buffer'] : 0;
         $batches = isset($data['batches']) ? $data['batches'] : [];
         
         // 数据验证
@@ -231,12 +238,12 @@ if (isset($_GET['api'])) {
             $productId = null;
             
             if ($check_result->num_rows > 0) {
-                // 商品已存在，更新名称
+                // 商品已存在，更新名称和缓冲
                 $row = $check_result->fetch_assoc();
                 $productId = $row['id'];
                 
-                $stmt_update = $conn->prepare("UPDATE products SET name = ? WHERE id = ?");
-                $stmt_update->bind_param("si", $name, $productId);
+                $stmt_update = $conn->prepare("UPDATE products SET name = ?, removal_buffer = ? WHERE id = ?");
+                $stmt_update->bind_param("sii", $name, $buffer, $productId);
                 $stmt_update->execute();
                 
                 // 删除旧批次（根据业务需求，也可以选择保留历史批次）
@@ -245,8 +252,8 @@ if (isset($_GET['api'])) {
                 $stmt_delete->execute();
             } else {
                 // 新商品，插入记录
-                $stmt_insert = $conn->prepare("INSERT INTO products (sku, name) VALUES (?, ?)");
-                $stmt_insert->bind_param("ss", $sku, $name);
+                $stmt_insert = $conn->prepare("INSERT INTO products (sku, name, removal_buffer) VALUES (?, ?, ?)");
+                $stmt_insert->bind_param("ssi", $sku, $name, $buffer);
                 $stmt_insert->execute();
                 $productId = $conn->insert_id;
             }
@@ -262,6 +269,9 @@ if (isset($_GET['api'])) {
                 $stmt_batch->execute();
             }
             
+            // 记录日志
+            addLog("保存商品", "SKU: $sku, 名称: $name, 提前下架: $buffer 天, 批次数: " . count($batches));
+
             // 提交事务
             $conn->commit();
             
@@ -358,25 +368,29 @@ if (isset($_GET['api'])) {
         // 查询所有商品及其批次，核心：按到期日期升序排列 (AI 整理逻辑)
         // 找到期的放在前面，后到期的放在后面
         $query = "
-            SELECT p.sku, p.name, b.expiry_date, b.quantity 
+            SELECT p.sku, p.name, p.removal_buffer, b.expiry_date, b.quantity 
             FROM products p 
             JOIN batches b ON p.id = b.product_id 
-            ORDER BY b.expiry_date ASC
+            ORDER BY DATE_SUB(b.expiry_date, INTERVAL p.removal_buffer DAY) ASC
         ";
         $result = $conn->query($query);
         
         while ($row = $result->fetch_assoc()) {
             $today = date('Y-m-d');
-            $diffDays = (strtotime($row['expiry_date']) - strtotime($today)) / 86400;
+            $buffer = (int)$row['removal_buffer'];
+            $expiryDate = $row['expiry_date'];
+            $removalDate = date('Y-m-d', strtotime("$expiryDate - $buffer days"));
+            
+            $diffDays = (strtotime($removalDate) - strtotime($today)) / 86400;
             
             // AI 状态整理逻辑
             $ai_status = "";
             if ($diffDays < 0) {
-                $ai_status = "🔴 已过期 (请立即下架)";
+                $ai_status = "🔴 已过期/需下架 (原到期: $expiryDate)";
             } elseif ($diffDays <= 30) {
-                $ai_status = "🟡 临期预警 (" . floor($diffDays) . "天内到期)";
+                $ai_status = "🟡 临期预警 (" . floor($diffDays) . "天内需下架)";
             } else {
-                $ai_status = "🟢 正常 (" . floor($diffDays) . "天后到期)";
+                $ai_status = "🟢 正常 (" . floor($diffDays) . "天后下架)";
             }
             
             fputcsv($output, [
@@ -528,9 +542,41 @@ if (isset($_GET['api'])) {
             'settings' => [
                 'ai_api_url' => getSetting('ai_api_url'),
                 'ai_api_key' => getSetting('ai_api_key'),
-                'ai_model' => getSetting('ai_model')
+                'ai_model' => getSetting('ai_model'),
+                'alert_email' => getSetting('alert_email'),
+                'alert_days' => getSetting('alert_days')
             ]
         ]);
+        exit;
+    }
+
+    // ========================================
+    // API 12: 获取健康报告数据
+    // ========================================
+    if ($action === 'get_health_report') {
+        // 过期数据分布 (基于下架日期)
+        $query = "
+            SELECT 
+                SUM(CASE WHEN DATE_SUB(expiry_date, INTERVAL (SELECT removal_buffer FROM products WHERE id = product_id) DAY) < CURDATE() THEN 1 ELSE 0 END) as expired,
+                SUM(CASE WHEN DATE_SUB(expiry_date, INTERVAL (SELECT removal_buffer FROM products WHERE id = product_id) DAY) BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY) THEN 1 ELSE 0 END) as urgent,
+                SUM(CASE WHEN DATE_SUB(expiry_date, INTERVAL (SELECT removal_buffer FROM products WHERE id = product_id) DAY) BETWEEN DATE_ADD(CURDATE(), INTERVAL 8 DAY) AND DATE_ADD(CURDATE(), INTERVAL 30 DAY) THEN 1 ELSE 0 END) as warning,
+                SUM(CASE WHEN DATE_SUB(expiry_date, INTERVAL (SELECT removal_buffer FROM products WHERE id = product_id) DAY) > DATE_ADD(CURDATE(), INTERVAL 30 DAY) THEN 1 ELSE 0 END) as healthy
+            FROM batches
+        ";
+        $data = $conn->query($query)->fetch_assoc();
+        echo json_encode(['success' => true, 'report' => $data]);
+        exit;
+    }
+
+    // ========================================
+    // API 13: 获取最新日志
+    // ========================================
+    if ($action === 'get_logs') {
+        $query = "SELECT l.*, u.username FROM logs l LEFT JOIN users u ON l.user_id = u.id ORDER BY l.created_at DESC LIMIT 10";
+        $res = $conn->query($query);
+        $logs = [];
+        while($row = $res->fetch_assoc()) $logs[] = $row;
+        echo json_encode(['success' => true, 'logs' => $logs]);
         exit;
     }
 
@@ -917,6 +963,43 @@ if (isset($_GET['api'])) {
         </div>
         <?php else: ?>
         <!-- 盘点功能 (已登录可见) -->
+        
+        <!-- 健康看板 -->
+        <div class="row mb-4">
+            <div class="col-md-8">
+                <div class="custom-card h-100">
+                    <div class="card-title"><i class="bi bi-shield-check"></i> 效期健康度大盘</div>
+                    <div class="progress mb-3" style="height: 30px; border-radius: 15px;">
+                        <div id="bar-expired" class="progress-bar bg-danger" role="progressbar"></div>
+                        <div id="bar-urgent" class="progress-bar bg-warning" role="progressbar"></div>
+                        <div id="bar-healthy" class="progress-bar bg-success" role="progressbar"></div>
+                    </div>
+                    <div class="row text-center small">
+                        <div class="col-4 border-end">
+                            <div class="text-danger fw-bold" id="val-expired">0</div>
+                            <div class="text-muted">已过期</div>
+                        </div>
+                        <div class="col-4 border-end">
+                            <div class="text-warning fw-bold" id="val-urgent">0</div>
+                            <div class="text-muted">7天内到期</div>
+                        </div>
+                        <div class="col-4">
+                            <div class="text-success fw-bold" id="val-healthy">0</div>
+                            <div class="text-muted">安全批次</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="custom-card h-100">
+                    <div class="card-title"><i class="bi bi-clock-history"></i> 最新操作日志</div>
+                    <div id="logContainer" class="small" style="max-height: 120px; overflow-y: auto;">
+                        <div class="text-center text-muted">加载中...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- 统计卡片 -->
         <div class="row mb-4">
             <div class="col-6 col-md-3 mb-3">
@@ -994,12 +1077,19 @@ if (isset($_GET['api'])) {
                 </div>
                 
                 <!-- 商品名称输入 -->
-                <div class="form-floating mb-3">
-                    <input type="text" class="form-control" id="productName" name="productName" 
-                           placeholder="商品名称" required>
-                    <label for="productName">
-                        <i class="bi bi-tag"></i> 商品名称
-                    </label>
+                <div class="row g-2 mb-3">
+                    <div class="col-8">
+                        <div class="form-floating">
+                            <input type="text" class="form-control" id="productName" name="productName" placeholder="商品名称" required>
+                            <label for="productName"><i class="bi bi-tag"></i> 商品名称</label>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="form-floating">
+                            <input type="number" class="form-control" id="removalBuffer" name="removalBuffer" value="0" min="0" required>
+                            <label for="removalBuffer"><i class="bi bi-alarm"></i> 提前下架(天)</label>
+                        </div>
+                    </div>
                 </div>
                 
                 <!-- 批次列表 -->
@@ -1061,7 +1151,7 @@ if (isset($_GET['api'])) {
                             <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#userTab">用户管理</button>
                         </li>
                         <li class="nav-item">
-                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#aiTab">AI 配置</button>
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#aiTab">AI 与预警</button>
                         </li>
                     </ul>
                     <div class="tab-content">
@@ -1097,6 +1187,7 @@ if (isset($_GET['api'])) {
                         <!-- AI 配置 -->
                         <div class="tab-pane fade" id="aiTab">
                             <form id="aiSettingsForm">
+                                <h6 class="fw-bold mb-3 border-bottom pb-2">AI 模型配置</h6>
                                 <div class="mb-3">
                                     <label class="form-label small">API 接口地址 (Base URL)</label>
                                     <input type="text" class="form-control" id="ai_api_url" placeholder="https://api.openai.com/v1">
@@ -1109,7 +1200,16 @@ if (isset($_GET['api'])) {
                                     <label class="form-label small">模型名称 (Model)</label>
                                     <input type="text" class="form-control" id="ai_model" placeholder="gpt-4o">
                                 </div>
-                                <button type="submit" class="btn btn-success w-100">保存 AI 设置</button>
+                                <h6 class="fw-bold mb-3 mt-4 border-bottom pb-2">系统主动预警</h6>
+                                <div class="mb-3">
+                                    <label class="form-label small">预警接收邮箱 (留空禁用)</label>
+                                    <input type="email" class="form-control" id="alert_email" placeholder="you@example.com">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label small">预警阈值 (天，逗号分隔)</label>
+                                    <input type="text" class="form-control" id="alert_days" placeholder="3,7,15">
+                                </div>
+                                <button type="submit" class="btn btn-success w-100">保存所有设置</button>
                             </form>
                         </div>
                     </div>
@@ -1180,27 +1280,32 @@ if (isset($_GET['api'])) {
             const expiry = new Date(expiryDate);
             expiry.setHours(0, 0, 0, 0);
             
-            const diffTime = expiry - today;
+            // 获取提前下架天数
+            const buffer = parseInt(document.getElementById('removalBuffer')?.value) || 0;
+            const removal = new Date(expiry);
+            removal.setDate(removal.getDate() - buffer);
+            
+            const diffTime = removal - today;
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
             
             if (diffDays < 0) {
                 return {
                     status: 'expired',
-                    text: `已过期 ${Math.abs(diffDays)} 天`,
+                    text: buffer > 0 ? `需下架 (原到期: ${expiryDate})` : `已过期 ${Math.abs(diffDays)} 天`,
                     class: 'expired',
                     badgeClass: 'expired'
                 };
             } else if (diffDays <= 30) {
                 return {
                     status: 'warning',
-                    text: `${diffDays} 天后到期`,
+                    text: `${diffDays} 天后需下架`,
                     class: 'warning',
                     badgeClass: 'warning'
                 };
             } else {
                 return {
                     status: 'normal',
-                    text: `${diffDays} 天后到期`,
+                    text: `${diffDays} 天后需下架`,
                     class: '',
                     badgeClass: 'normal'
                 };
@@ -1249,13 +1354,17 @@ if (isset($_GET['api'])) {
             // 如果已经登录，加载统计
             if (document.getElementById('statProducts')) {
                 loadStatistics();
+                refreshHealthDashboard();
+                loadLogs();
             }
             
             // 刷新统计按钮
             if (document.getElementById('refreshStatsBtn')) {
                 document.getElementById('refreshStatsBtn').addEventListener('click', function() {
                     loadStatistics();
-                    showAlert('统计数据已刷新', 'success');
+                    refreshHealthDashboard();
+                    loadLogs();
+                    showAlert('面板数据已全面刷新', 'success');
                 });
             }
 
@@ -1357,9 +1466,11 @@ if (isset($_GET['api'])) {
                     const ai_api_url = document.getElementById('ai_api_url').value;
                     const ai_api_key = document.getElementById('ai_api_key').value;
                     const ai_model = document.getElementById('ai_model').value;
+                    const alert_email = document.getElementById('alert_email').value;
+                    const alert_days = document.getElementById('alert_days').value;
                     const resp = await fetch('index.php?api=save_settings', {
                         method: 'POST',
-                        body: JSON.stringify({ ai_api_url, ai_api_key, ai_model })
+                        body: JSON.stringify({ ai_api_url, ai_api_key, ai_model, alert_email, alert_days })
                     });
                     const data = await resp.json();
                     if (data.success) {
@@ -1370,6 +1481,37 @@ if (isset($_GET['api'])) {
                 });
             }
         });
+
+        async function refreshHealthDashboard() {
+            const resp = await fetch('index.php?api=get_health_report');
+            const data = await resp.json();
+            if (data.success) {
+                const r = data.report;
+                const total = parseInt(r.expired) + parseInt(r.urgent) + parseInt(r.warning) + parseInt(r.healthy);
+                if (total > 0) {
+                    document.getElementById('bar-expired').style.width = (r.expired / total * 100) + '%';
+                    document.getElementById('bar-urgent').style.width = ((parseInt(r.urgent) + parseInt(r.warning)) / total * 100) + '%';
+                    document.getElementById('bar-healthy').style.width = (r.healthy / total * 100) + '%';
+                }
+                document.getElementById('val-expired').innerText = r.expired || 0;
+                document.getElementById('val-urgent').innerText = (parseInt(r.urgent) + parseInt(r.warning)) || 0;
+                document.getElementById('val-healthy').innerText = r.healthy || 0;
+            }
+        }
+
+        async function loadLogs() {
+            const resp = await fetch('index.php?api=get_logs');
+            const data = await resp.json();
+            if (data.success) {
+                const container = document.getElementById('logContainer');
+                container.innerHTML = data.logs.map(l => `
+                    <div class="mb-1 border-bottom pb-1">
+                        <span class="text-primary fw-bold">${l.username || '系统'}</span>: ${l.action}
+                        <div class="text-muted" style="font-size: 0.75rem;">${l.created_at} - ${l.details}</div>
+                    </div>
+                `).join('') || '<div class="text-center text-muted">暂无日志</div>';
+            }
+        }
 
         async function loadUserList() {
             const resp = await fetch('index.php?api=get_users');
@@ -1393,6 +1535,8 @@ if (isset($_GET['api'])) {
                 document.getElementById('ai_api_url').value = data.settings.ai_api_url;
                 document.getElementById('ai_api_key').value = data.settings.ai_api_key;
                 document.getElementById('ai_model').value = data.settings.ai_model;
+                document.getElementById('alert_email').value = data.settings.alert_email;
+                document.getElementById('alert_days').value = data.settings.alert_days;
             }
         }
 
@@ -1601,6 +1745,7 @@ if (isset($_GET['api'])) {
                     if (data.exists) {
                         // 商品存在，回显信息
                         document.getElementById('productName').value = data.product.name;
+                        document.getElementById('removalBuffer').value = data.product.removal_buffer || 0;
                         
                         // 显示已有批次
                         displayBatches(data.batches);
@@ -1609,6 +1754,7 @@ if (isset($_GET['api'])) {
                     } else {
                         // 商品不存在，准备新建
                         document.getElementById('productName').value = '';
+                        document.getElementById('removalBuffer').value = 0;
                         clearBatches();
                         addBatchRow();
                         
@@ -1770,6 +1916,7 @@ if (isset($_GET['api'])) {
             
             const sku = document.getElementById('sku').value.trim();
             const name = document.getElementById('productName').value.trim();
+            const removal_buffer = parseInt(document.getElementById('removalBuffer').value) || 0;
             
             // 收集批次数据
             const batches = [];
@@ -1807,6 +1954,7 @@ if (isset($_GET['api'])) {
                     body: JSON.stringify({
                         sku: sku,
                         name: name,
+                        removal_buffer: removal_buffer,
                         batches: batches
                     })
                 });
@@ -1872,6 +2020,17 @@ if (isset($_GET['api'])) {
                     e.preventDefault();
                     document.getElementById('manualSearchBtn').click();
                 }
+            });
+
+            // 监听提前下架天数变化，实时更新批次状态
+            document.getElementById('removalBuffer')?.addEventListener('input', function() {
+                const batchItems = document.querySelectorAll('.batch-item');
+                batchItems.forEach(item => {
+                    const dateInput = item.querySelector('.expiry-date-input');
+                    if (dateInput && dateInput.value) {
+                        updateBatchStatus(item, dateInput.value);
+                    }
+                });
             });
             
             // 欢迎提示

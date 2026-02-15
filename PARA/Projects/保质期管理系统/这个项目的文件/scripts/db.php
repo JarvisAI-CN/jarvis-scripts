@@ -83,6 +83,19 @@ function checkAuth() {
     return true;
 }
 
+/**
+ * 记录操作日志
+ */
+function addLog($action, $details = '') {
+    $conn = getDBConnection();
+    if (!$conn) return false;
+    
+    $uid = $_SESSION['user_id'] ?? 0;
+    $stmt = $conn->prepare("INSERT INTO logs (user_id, action, details) VALUES (?, ?, ?)");
+    $stmt->bind_param("iss", $uid, $action, $details);
+    return $stmt->execute();
+}
+
 function escapeValue($conn, $value) {
     return $conn->real_escape_string($value);
 }
