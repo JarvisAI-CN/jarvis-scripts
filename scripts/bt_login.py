@@ -5,26 +5,30 @@ import time
 os.environ['DISPLAY'] = ':1'
 
 def login():
-    # Click username field
-    pyautogui.click(450, 525)
+    # Click username
+    pyautogui.click(450, 380) # Click inside username field
     pyautogui.hotkey('ctrl', 'a')
     pyautogui.press('backspace')
     pyautogui.write('fs123')
+    time.sleep(0.5)
     
-    # Password
+    # Press Tab to password
     pyautogui.press('tab')
     pyautogui.hotkey('ctrl', 'a')
     pyautogui.press('backspace')
     pyautogui.write('fs123456')
+    time.sleep(0.5)
     
-    # Captcha - Manually identified as 7NGW
+    # Press Tab to captcha
     pyautogui.press('tab')
-    pyautogui.write('7NGW')
+    # Manually identified captcha from screenshot
+    pyautogui.write('3pLG')
+    time.sleep(0.5)
     
-    # Enter
+    # Login
     pyautogui.press('enter')
-    time.sleep(10)
-    pyautogui.screenshot('/home/ubuntu/.openclaw/workspace/bt_final_attempt.png')
+    time.sleep(8)
+    pyautogui.screenshot('/home/ubuntu/.openclaw/workspace/vnc_login_result.png')
 
 if __name__ == "__main__":
     login()
