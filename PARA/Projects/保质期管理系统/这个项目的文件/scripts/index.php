@@ -1,25 +1,43 @@
 <?php
 /**
  * ========================================
- * 保质期管理系统 - 手机移动端 (Portal)
+ * 保质期管理系统 - 综合管理后台
  * 文件名: index.php
- * 版本: v2.7.0-alpha
+ * 版本: v2.7.3-alpha
+ * 创建日期: 2026-02-15
  * ========================================
  */
 
 // 升级配置
-define('APP_VERSION', '2.7.1-alpha');
+define('APP_VERSION', '2.7.3-alpha');
 define('UPDATE_URL', 'https://raw.githubusercontent.com/JarvisAI-CN/expiry-management-system/main/');
+define('FALLBACK_URL', 'http://150.109.204.23:8888/');
 
 session_start();
 require_once 'db.php';
 
-// 自动迁移 (地基加固)
+// 自动迁移
 function autoMigrate() {
     $conn = getDBConnection();
     if (!$conn) return;
-    $cols = ['products'=>['category_id'=>'INT(11) UNSIGNED DEFAULT 0 AFTER id','inventory_cycle'=>"VARCHAR(20) DEFAULT 'none' AFTER removal_buffer",'last_inventory_at'=>"DATETIME DEFAULT NULL AFTER inventory_cycle"],'batches'=>['session_id'=>'VARCHAR(50) DEFAULT NULL AFTER quantity']];
-    foreach($cols as $table => $fields) { foreach($fields as $col => $def) { $res = $conn->query("SHOW COLUMNS FROM `$table` LIKE '$col'"); if ($res && $res->num_rows == 0) { $conn->query("ALTER TABLE `$table` ADD COLUMN `$col` $def"); } } }
+    
+    $cols = [
+        'products' => [
+            'category_id' => 'INT(11) UNSIGNED DEFAULT 0 AFTER id',
+            'inventory_cycle' => "VARCHAR(20) DEFAULT 'none' AFTER removal_buffer",
+            'last_inventory_at' => "DATETIME DEFAULT NULL AFTER inventory_cycle"
+        ],
+        'batches' => [
+            'session_id' => 'VARCHAR(50) DEFAULT NULL AFTER quantity'
+        ]
+    ];
+    foreach($cols as $table => $fields) {
+        foreach($fields as $col => $def) {
+            $res = $conn->query("SHOW COLUMNS FROM `$table` LIKE '$col'");
+            if ($res && $res->num_rows == 0) { $conn->query("ALTER TABLE `$table` ADD COLUMN `$col` $def"); }
+        }
+    }
+    
     $conn->query("CREATE TABLE IF NOT EXISTS `categories` (id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, name VARCHAR(50) UNIQUE, type VARCHAR(20), rule TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
     $conn->query("INSERT IGNORE INTO `categories` (name, type, rule) VALUES ('小食品', 'snack', '{\"need_buffer\":true, \"scrap_on_removal\":true}'), ('物料', 'material', '{\"need_buffer\":false, \"scrap_on_removal\":false}'), ('咖啡豆', 'coffee', '{\"need_buffer\":true, \"scrap_on_removal\":false, \"allow_gift\":true}')");
     $conn->query("CREATE TABLE IF NOT EXISTS `inventory_sessions` (id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, session_key VARCHAR(50) UNIQUE, user_id INT UNSIGNED, item_count INT DEFAULT 0, created_at DATETIME DEFAULT CURRENT_TIMESTAMP) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
@@ -42,10 +60,26 @@ if (isset($_GET['api'])) {
         echo json_encode(['success'=>false, 'message'=>'账号或密码错误']); exit;
     }
     if ($action === 'logout') { session_destroy(); echo json_encode(['success'=>true]); exit; }
+    
     if ($action === 'check_upgrade') {
         $latest = @file_get_contents(UPDATE_URL . 'VERSION.txt');
-        if ($latest) { $latest = trim($latest); echo json_encode(['success'=>true, 'current'=>APP_VERSION, 'latest'=>$latest, 'has_update'=>version_compare($latest, APP_VERSION, '>')]); }
-        else { echo json_encode(['success'=>false]); } exit;
+        if (!$latest) $latest = @file_get_contents(FALLBACK_URL . 'VERSION.txt');
+        if ($latest) {
+            $latest = trim($latest);
+            echo json_encode(['success'=>true, 'current'=>APP_VERSION, 'latest'=>$latest, 'has_update'=>version_compare($latest, APP_VERSION, '>')]);
+        } else { echo json_encode(['success'=>false]); }
+        exit;
+    }
+
+    if ($action === 'execute_upgrade') {
+        $files = ['index.php', 'db.php', 'install.php', 'admin.php', 'VERSION.txt'];
+        foreach ($files as $f) {
+            $ctx = stream_context_create(['http'=>['timeout'=>10]]);
+            $c = @file_get_contents(UPDATE_URL . $f, false, $ctx);
+            if (!$c) $c = @file_get_contents(FALLBACK_URL . $f);
+            if ($c) @file_put_contents(__DIR__ . '/' . $f, $c);
+        }
+        echo json_encode(['success'=>true]); exit;
     }
 
     checkAuth();
@@ -64,7 +98,8 @@ if (isset($_GET['api'])) {
                 $buffer = ($rule['need_buffer'] ?? true) ? (int)$product['removal_buffer'] : 0;
                 $remDate = date('Y-m-d', strtotime($b['expiry_date']." - $buffer days"));
                 $diff = (strtotime($remDate) - strtotime(date('Y-m-d'))) / 86400;
-                $b['removal_date'] = $remDate; $b['status'] = $diff < 0 ? 'expired' : ($diff <= 30 ? 'warning' : 'normal');
+                $b['removal_date'] = $remDate; $b['days_to_removal'] = floor($diff);
+                $b['status'] = $diff < 0 ? 'expired' : ($diff <= 30 ? 'warning' : 'normal');
                 $batches[] = $b;
             }
             echo json_encode(['success'=>true, 'exists'=>true, 'product'=>$product, 'batches'=>$batches]);
@@ -99,17 +134,6 @@ if (isset($_GET['api'])) {
     if ($action === 'get_health_report') {
         $query = "SELECT SUM(CASE WHEN DATE_SUB(b.expiry_date, INTERVAL p.removal_buffer DAY) < CURDATE() THEN 1 ELSE 0 END) as expired, SUM(CASE WHEN DATE_SUB(b.expiry_date, INTERVAL p.removal_buffer DAY) BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY) THEN 1 ELSE 0 END) as urgent, SUM(CASE WHEN DATE_SUB(b.expiry_date, INTERVAL p.removal_buffer DAY) > DATE_ADD(CURDATE(), INTERVAL 7 DAY) THEN 1 ELSE 0 END) as healthy FROM batches b JOIN products p ON b.product_id = p.id";
         echo json_encode(['success'=>true, 'report'=>$conn->query($query)->fetch_assoc()]); exit;
-    }
-    if ($action === 'get_inventory_full') {
-        $query = "SELECT p.sku, p.name, p.removal_buffer, b.expiry_date, b.quantity FROM products p JOIN batches b ON p.id = b.product_id ORDER BY b.expiry_date ASC";
-        $res = $conn->query($query); $list = [];
-        while($row = $res->fetch_assoc()) { $list[] = $row; }
-        echo json_encode(['success'=>true, 'data'=>$list]); exit;
-    }
-    if ($action === 'get_categories') {
-        $res = $conn->query("SELECT * FROM categories"); $list = [];
-        while($r = $res->fetch_assoc()) $list[] = $r;
-        echo json_encode(['success'=>true, 'categories'=>$list]); exit;
     }
     if ($action === 'submit_session') {
         $data = json_decode(file_get_contents('php://input'), true);
@@ -146,6 +170,7 @@ if (isset($_GET['api'])) {
         .app-header { background: #fff; padding: 12px 0; box-shadow: 0 2px 10px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 100; }
         .custom-card { background: white; border-radius: 12px; padding: 16px; margin-bottom: 15px; border: none; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
         .portal-btn { background: white; border-radius: 15px; padding: 25px 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 15px; display: flex; align-items: center; gap: 15px; width: 100%; border: none; }
+        .portal-btn i { font-size: 2rem; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; border-radius: 10px; color: white; }
         .bg-new { background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%); }
         .bg-past { background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%); }
         .view-section { display: none; } .view-section.active { display: block; }
@@ -180,7 +205,7 @@ if (isset($_GET['api'])) {
         </div>
         <div id="newView" class="view-section">
             <button class="btn btn-link btn-sm text-decoration-none mb-2" onclick="switchView('portal')"><i class="bi bi-chevron-left"></i> 返回门户</button>
-            <div class="scan-trigger-area mb-3 shadow-sm" id="startScanBtn" style="padding:40px 20px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 15px; text-align: center; color: white;"><i class="bi bi-qr-code-scan d-block h1"></i><span>开始扫码</span></div>
+            <div class="scan-trigger-area mb-3 shadow-sm" id="startScanBtn" style="padding:40px 20px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 15px; text-align: center; color: white;"><i class="bi bi-qr-code-scan d-block h1"></i><span>点击添加 (扫一扫)</span></div>
             <div id="pendingList"></div>
             <div class="d-grid mt-3"><button class="btn btn-primary btn-lg shadow fw-bold" id="submitSessionBtn" disabled>提交本次盘点单</button></div>
         </div>
@@ -197,7 +222,7 @@ if (isset($_GET['api'])) {
         function switchView(v) { document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active')); document.getElementById(v+'View').classList.add('active'); if(v==='past') loadPast(); }
         function showAlert(m, t='info') { const el = document.createElement('div'); el.className = `alert alert-${t} fade show shadow position-fixed top-0 start-50 translate-middle-x mt-3`; el.style.zIndex='3000'; el.innerText=m; document.body.appendChild(el); setTimeout(()=>el.remove(), 2500); }
         document.addEventListener('DOMContentLoaded', () => {
-            if(document.getElementById('portalView')) { refreshHealth(); loadCats(); }
+            if(document.getElementById('portalView')) { refreshHealth(); loadCats(); checkUpgrade(); }
             document.getElementById('loginForm')?.addEventListener('submit', async(e)=>{ e.preventDefault(); const res = await fetch('index.php?api=login',{method:'POST', body:JSON.stringify({username:document.getElementById('loginUser').value, password:document.getElementById('loginPass').value})}); if((await res.json()).success) location.reload(); else showAlert('错误','danger'); });
             document.getElementById('logoutBtn')?.addEventListener('click', async () => { await fetch('index.php?api=logout'); location.reload(); });
             document.getElementById('startScanBtn')?.addEventListener('click', ()=>{ document.getElementById('scanOverlay').style.display='flex'; if(!html5QrCode) html5QrCode = new Html5Qrcode("reader"); html5QrCode.start({facingMode:"environment"}, {fps:15, qrbox:250}, (text)=>{ document.getElementById('sku').value=text; html5QrCode.stop(); document.getElementById('scanOverlay').style.display='none'; searchSKU(text); }); });
@@ -251,6 +276,14 @@ if (isset($_GET['api'])) {
             const t = parseInt(d.expired)+parseInt(d.urgent)+parseInt(d.healthy);
             if(t>0) { document.getElementById('bar-expired').style.width=(d.expired/t*100)+'%'; document.getElementById('bar-urgent').style.width=(d.urgent/t*100)+'%'; document.getElementById('bar-healthy').style.width=(d.healthy/t*100)+'%'; }
             document.getElementById('val-expired').innerText=d.expired; document.getElementById('val-urgent').innerText=d.urgent; document.getElementById('val-healthy').innerText=d.healthy;
+        }
+        async function checkUpgrade() {
+            const res = await fetch('index.php?api=check_upgrade'); const d = await res.json();
+            if(d.has_update) {
+                const b = document.createElement('button'); b.className='btn btn-warning btn-sm w-100 mb-3'; b.innerText='发现新版本 v'+d.latest+', 点击升级';
+                b.onclick = async() => { b.disabled=true; b.innerText='升级中...'; await fetch('index.php?api=execute_upgrade'); location.reload(); };
+                document.getElementById('portalView').prepend(b);
+            }
         }
     </script>
 </body>

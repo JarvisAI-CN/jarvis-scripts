@@ -1,0 +1,174 @@
+{
+  "suite_name": "RegressionDemo",
+  "total": 3,
+  "passed": 3,
+  "failed": 0,
+  "skipped": 0,
+  "errors": 0,
+  "duration": 0.001,
+  "success_rate": 100.0,
+  "start_time": "2026-02-15T23:00:48.329711",
+  "end_time": "2026-02-15T23:00:48.330977",
+  "test_cases": [
+    {
+      "name": "DictMatchTest",
+      "status": "passed",
+      "duration": 0.0,
+      "error_message": null,
+      "error_trace": null,
+      "steps": [
+        {
+          "name": "setup",
+          "status": "passed",
+          "duration": 0.0,
+          "error": null,
+          "timestamp": "2026-02-15T23:00:48.330517"
+        },
+        {
+          "name": "execute_dict_match_test",
+          "status": "running",
+          "duration": 0.0,
+          "error": null,
+          "timestamp": "2026-02-15T23:00:48.330522"
+        },
+        {
+          "name": "execute_dict_match_test",
+          "status": "passed",
+          "duration": 0.0,
+          "error": null,
+          "timestamp": "2026-02-15T23:00:48.330531"
+        },
+        {
+          "name": "run_test",
+          "status": "passed",
+          "duration": 0.0,
+          "error": null,
+          "timestamp": "2026-02-15T23:00:48.330533"
+        },
+        {
+          "name": "teardown",
+          "status": "passed",
+          "duration": 0.0,
+          "error": null,
+          "timestamp": "2026-02-15T23:00:48.330535"
+        }
+      ],
+      "metadata": {
+        "actual_keys": [
+          "status",
+          "code"
+        ]
+      }
+    },
+    {
+      "name": "AddFunctionTest",
+      "status": "passed",
+      "duration": 0.0,
+      "error_message": null,
+      "error_trace": null,
+      "steps": [
+        {
+          "name": "setup",
+          "status": "passed",
+          "duration": 0.0,
+          "error": null,
+          "timestamp": "2026-02-15T23:00:48.330069"
+        },
+        {
+          "name": "execute_function_test",
+          "status": "running",
+          "duration": 0.0,
+          "error": null,
+          "timestamp": "2026-02-15T23:00:48.330077"
+        },
+        {
+          "name": "execute_function_test",
+          "status": "passed",
+          "duration": 0.0,
+          "error": null,
+          "timestamp": "2026-02-15T23:00:48.330082"
+        },
+        {
+          "name": "run_test",
+          "status": "passed",
+          "duration": 0.0,
+          "error": null,
+          "timestamp": "2026-02-15T23:00:48.330085"
+        },
+        {
+          "name": "teardown",
+          "status": "passed",
+          "duration": 0.0,
+          "error": null,
+          "timestamp": "2026-02-15T23:00:48.330088"
+        }
+      ],
+      "metadata": {
+        "actual": 5,
+        "expected": 5
+      }
+    },
+    {
+      "name": "SortingCompatibility",
+      "status": "passed",
+      "duration": 0.0,
+      "error_message": null,
+      "error_trace": null,
+      "steps": [
+        {
+          "name": "setup",
+          "status": "passed",
+          "duration": 0.0,
+          "error": null,
+          "timestamp": "2026-02-15T23:00:48.330604"
+        },
+        {
+          "name": "config_0_StandardSort",
+          "status": "running",
+          "duration": 0.0,
+          "error": null,
+          "timestamp": "2026-02-15T23:00:48.330610"
+        },
+        {
+          "name": "config_0_StandardSort",
+          "status": "passed",
+          "duration": 0.0,
+          "error": null,
+          "timestamp": "2026-02-15T23:00:48.330615"
+        },
+        {
+          "name": "config_1_ReverseSortOff",
+          "status": "running",
+          "duration": 0.0,
+          "error": null,
+          "timestamp": "2026-02-15T23:00:48.330645"
+        },
+        {
+          "name": "config_1_ReverseSortOff",
+          "status": "passed",
+          "duration": 0.0,
+          "error": null,
+          "timestamp": "2026-02-15T23:00:48.330649"
+        },
+        {
+          "name": "run_test",
+          "status": "passed",
+          "duration": 0.0,
+          "error": null,
+          "timestamp": "2026-02-15T23:00:48.330681"
+        },
+        {
+          "name": "teardown",
+          "status": "passed",
+          "duration": 0.0,
+          "error": null,
+          "timestamp": "2026-02-15T23:00:48.330684"
+        }
+      ],
+      "metadata": {
+        "total_configs": 2,
+        "passed_configs": 3
+      }
+    }
+  ]
+}
