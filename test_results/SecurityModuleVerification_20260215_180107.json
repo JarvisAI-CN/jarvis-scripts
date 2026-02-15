@@ -1,0 +1,225 @@
+{
+  "suite_name": "SecurityModuleVerification",
+  "total": 4,
+  "passed": 4,
+  "failed": 0,
+  "skipped": 0,
+  "errors": 0,
+  "duration": 2.421,
+  "success_rate": 100.0,
+  "start_time": "2026-02-15T18:01:05.166616",
+  "end_time": "2026-02-15T18:01:07.587999",
+  "test_cases": [
+    {
+      "name": "配置审计",
+      "status": "passed",
+      "duration": 0.005,
+      "error_message": null,
+      "error_trace": null,
+      "steps": [
+        {
+          "name": "setup",
+          "status": "passed",
+          "duration": 0.0,
+          "error": null,
+          "timestamp": "2026-02-15T18:01:05.167606"
+        },
+        {
+          "name": "read_config",
+          "status": "running",
+          "duration": 0.0,
+          "error": null,
+          "timestamp": "2026-02-15T18:01:05.168159"
+        },
+        {
+          "name": "read_config",
+          "status": "passed",
+          "duration": 0.0,
+          "error": null,
+          "timestamp": "2026-02-15T18:01:05.171340"
+        },
+        {
+          "name": "audit_sensitive_info",
+          "status": "running",
+          "duration": 0.0,
+          "error": null,
+          "timestamp": "2026-02-15T18:01:05.171346"
+        },
+        {
+          "name": "audit_sensitive_info",
+          "status": "passed",
+          "duration": 0.0,
+          "error": "No sensitive info leaks found",
+          "timestamp": "2026-02-15T18:01:05.171403"
+        },
+        {
+          "name": "run_test",
+          "status": "passed",
+          "duration": 0.004,
+          "error": null,
+          "timestamp": "2026-02-15T18:01:05.171409"
+        },
+        {
+          "name": "teardown",
+          "status": "passed",
+          "duration": 0.0,
+          "error": null,
+          "timestamp": "2026-02-15T18:01:05.171414"
+        }
+      ],
+      "metadata": {}
+    },
+    {
+      "name": "权限检查",
+      "status": "passed",
+      "duration": 0.006,
+      "error_message": null,
+      "error_trace": null,
+      "steps": [
+        {
+          "name": "setup",
+          "status": "passed",
+          "duration": 0.0,
+          "error": null,
+          "timestamp": "2026-02-15T18:01:05.168114"
+        },
+        {
+          "name": "scan_permissions",
+          "status": "running",
+          "duration": 0.0,
+          "error": null,
+          "timestamp": "2026-02-15T18:01:05.168120"
+        },
+        {
+          "name": "scan_permissions",
+          "status": "passed",
+          "duration": 0.0,
+          "error": "All file permissions look safe",
+          "timestamp": "2026-02-15T18:01:05.173294"
+        },
+        {
+          "name": "run_test",
+          "status": "passed",
+          "duration": 0.005,
+          "error": null,
+          "timestamp": "2026-02-15T18:01:05.173301"
+        },
+        {
+          "name": "teardown",
+          "status": "passed",
+          "duration": 0.0,
+          "error": null,
+          "timestamp": "2026-02-15T18:01:05.173306"
+        }
+      ],
+      "metadata": {}
+    },
+    {
+      "name": "代码漏洞扫描",
+      "status": "passed",
+      "duration": 0.507,
+      "error_message": null,
+      "error_trace": null,
+      "steps": [
+        {
+          "name": "setup",
+          "status": "passed",
+          "duration": 0.0,
+          "error": null,
+          "timestamp": "2026-02-15T18:01:05.167402"
+        },
+        {
+          "name": "check_bandit_installed",
+          "status": "running",
+          "duration": 0.0,
+          "error": null,
+          "timestamp": "2026-02-15T18:01:05.167412"
+        },
+        {
+          "name": "check_bandit_installed",
+          "status": "passed",
+          "duration": 0.0,
+          "error": null,
+          "timestamp": "2026-02-15T18:01:05.365356"
+        },
+        {
+          "name": "run_bandit_scan",
+          "status": "running",
+          "duration": 0.0,
+          "error": null,
+          "timestamp": "2026-02-15T18:01:05.365366"
+        },
+        {
+          "name": "run_bandit_scan",
+          "status": "passed",
+          "duration": 0.0,
+          "error": "Found 9 vulnerabilities. High: 0",
+          "timestamp": "2026-02-15T18:01:05.673737"
+        },
+        {
+          "name": "run_test",
+          "status": "passed",
+          "duration": 0.506,
+          "error": null,
+          "timestamp": "2026-02-15T18:01:05.673755"
+        },
+        {
+          "name": "teardown",
+          "status": "passed",
+          "duration": 0.0,
+          "error": null,
+          "timestamp": "2026-02-15T18:01:05.673826"
+        }
+      ],
+      "metadata": {
+        "total_issues": 9,
+        "high_severity": 0
+      }
+    },
+    {
+      "name": "依赖漏洞检查",
+      "status": "passed",
+      "duration": 2.42,
+      "error_message": null,
+      "error_trace": null,
+      "steps": [
+        {
+          "name": "setup",
+          "status": "passed",
+          "duration": 0.0,
+          "error": null,
+          "timestamp": "2026-02-15T18:01:05.171562"
+        },
+        {
+          "name": "check_environment",
+          "status": "running",
+          "duration": 0.0,
+          "error": null,
+          "timestamp": "2026-02-15T18:01:05.171592"
+        },
+        {
+          "name": "run_safety_check",
+          "status": "passed",
+          "duration": 0.0,
+          "error": "Safety completed with warnings (no critical vulnerabilities confirmed)",
+          "timestamp": "2026-02-15T18:01:07.587498"
+        },
+        {
+          "name": "run_test",
+          "status": "passed",
+          "duration": 2.416,
+          "error": null,
+          "timestamp": "2026-02-15T18:01:07.587512"
+        },
+        {
+          "name": "teardown",
+          "status": "passed",
+          "duration": 0.0,
+          "error": null,
+          "timestamp": "2026-02-15T18:01:07.587522"
+        }
+      ],
+      "metadata": {}
+    }
+  ]
+}
