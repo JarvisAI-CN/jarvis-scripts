@@ -298,6 +298,60 @@ if (isset($_GET['api'])) {
         exit;
     }
     
+    // ========================================
+    // API 4: 导出盘点表 (CSV 格式)
+    // ========================================
+    if ($action === 'export_inventory') {
+        // 设置 HTTP 头部，触发下载
+        $filename = "盘点表_" . date('Ymd_His') . ".csv";
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        
+        // 输出 UTF-8 BOM，确保 Excel 打开不乱码
+        echo "\xEF\xBB\xBF";
+        
+        $output = fopen('php://output', 'w');
+        
+        // 写入表头
+        fputcsv($output, ['SKU/条形码', '商品名称', '到期日期', '当前数量', '状态/AI建议']);
+        
+        // 查询所有商品及其批次，核心：按到期日期升序排列 (AI 整理逻辑)
+        // 找到期的放在前面，后到期的放在后面
+        $query = "
+            SELECT p.sku, p.name, b.expiry_date, b.quantity 
+            FROM products p 
+            JOIN batches b ON p.id = b.product_id 
+            ORDER BY b.expiry_date ASC
+        ";
+        $result = $conn->query($query);
+        
+        while ($row = $result->fetch_assoc()) {
+            $today = date('Y-m-d');
+            $diffDays = (strtotime($row['expiry_date']) - strtotime($today)) / 86400;
+            
+            // AI 状态整理逻辑
+            $ai_status = "";
+            if ($diffDays < 0) {
+                $ai_status = "🔴 已过期 (请立即下架)";
+            } elseif ($diffDays <= 30) {
+                $ai_status = "🟡 临期预警 (" . floor($diffDays) . "天内到期)";
+            } else {
+                $ai_status = "🟢 正常 (" . floor($diffDays) . "天后到期)";
+            }
+            
+            fputcsv($output, [
+                $row['sku'],
+                $row['name'],
+                $row['expiry_date'],
+                $row['quantity'],
+                $ai_status
+            ]);
+        }
+        
+        fclose($output);
+        exit;
+    }
+    
     // 未知的 API 请求
     echo json_encode([
         'success' => false,
@@ -630,9 +684,14 @@ if (isset($_GET['api'])) {
                     <h1><i class="bi bi-box-seam"></i> 保质期管理系统</h1>
                     <div class="subtitle">扫码录入 · 批次管理 · 临期提醒</div>
                 </div>
-                <button class="btn btn-light btn-sm" id="refreshStatsBtn">
-                    <i class="bi bi-arrow-clockwise"></i> 刷新统计
-                </button>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-warning btn-sm" id="exportBtn">
+                        <i class="bi bi-file-earmark-spreadsheet"></i> 下载盘点表
+                    </button>
+                    <button class="btn btn-light btn-sm" id="refreshStatsBtn">
+                        <i class="bi bi-arrow-clockwise"></i> 刷新统计
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -898,6 +957,12 @@ if (isset($_GET['api'])) {
             document.getElementById('refreshStatsBtn').addEventListener('click', function() {
                 loadStatistics();
                 showAlert('统计数据已刷新', 'success');
+            });
+
+            // 导出盘点表按钮
+            document.getElementById('exportBtn').addEventListener('click', function() {
+                window.location.href = 'index.php?api=export_inventory';
+                showAlert('正在生成 AI 整理的盘点表...', 'info');
             });
         });
         
