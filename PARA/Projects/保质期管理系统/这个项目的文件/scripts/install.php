@@ -43,6 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $sql = "
         CREATE TABLE IF NOT EXISTS `products` (
           `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+          `category_id` INT(11) UNSIGNED DEFAULT 0,
           `sku` VARCHAR(100) NOT NULL,
           `name` VARCHAR(200) NOT NULL,
           `removal_buffer` INT(5) UNSIGNED DEFAULT 0,
@@ -51,6 +52,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           PRIMARY KEY (`id`),
           UNIQUE KEY `uk_sku` (`sku`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+        CREATE TABLE IF NOT EXISTS `categories` (
+          `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+          `name` VARCHAR(50) NOT NULL,
+          `type` VARCHAR(20) NOT NULL,
+          `rule` TEXT,
+          `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+          PRIMARY KEY (`id`),
+          UNIQUE KEY `uk_name` (`name`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+        INSERT IGNORE INTO `categories` (`name`, `type`, `rule`) VALUES 
+        ('小食品', 'snack', '{\"need_buffer\":true, \"scrap_on_removal\":true}'),
+        ('物料', 'material', '{\"need_buffer\":false, \"scrap_on_removal\":false}'),
+        ('咖啡豆', 'coffee', '{\"need_buffer\":true, \"scrap_on_removal\":false, \"allow_gift\":true}');
 
         CREATE TABLE IF NOT EXISTS `batches` (
           `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,

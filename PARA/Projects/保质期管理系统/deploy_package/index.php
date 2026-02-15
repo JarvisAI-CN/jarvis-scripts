@@ -3,22 +3,22 @@
  * ========================================
  * 保质期管理系统 - 主页面（完整版）
  * 文件名: index.php
- * 版本: v2.0.1-alpha
+ * 版本: v2.1.0-alpha
  * 创建日期: 2026-02-15
  * ========================================
  * 功能说明：
- * 1. 提前下架: 支持设置每个商品提前 N 天提醒/下架
- * 2. 智能化: 首页健康大盘可视化 (基于下架日期)
- * 3. 安全化: 关键操作全程日志记录
- * 4. 预警化: 支持配置 3/7/15 天自动预警
- * 5. 权限控制: 仅登录用户可访问
- * 6. 用户管理: 后台添加用户、无感重置密码
+ * 1. 分类管理: 酸奶/饼干(小食品)、物料、咖啡豆，支持不同下架规则
+ * 2. 提前下架: 支持设置每个商品提前 N 天提醒/下架
+ * 3. 智能化: 首页健康大盘可视化
+ * 4. 安全化: 关键操作全程日志记录
+ * 5. 预警化: 支持配置 3/7/15 天自动预警
+ * 6. 权限控制: 仅登录用户可访问
  * 7. 一键升级: 在线热更新
  * ========================================
  */
 
 // 升级配置
-define('APP_VERSION', '2.0.1-alpha');
+define('APP_VERSION', '2.1.0-alpha');
 define('UPDATE_URL', 'https://raw.githubusercontent.com/JarvisAI-CN/expiry-management-system/main/');
 
 // 启动 Session
@@ -88,15 +88,17 @@ if (isset($_GET['api'])) {
         $sku = isset($_GET['sku']) ? trim($_GET['sku']) : '';
         
         if (empty($sku)) {
-            echo json_encode([
-                'success' => false,
-                'message' => 'SKU 不能为空'
-            ], JSON_UNESCAPED_UNICODE);
+            echo json_encode(['success' => false, 'message' => 'SKU 不能为空'], JSON_UNESCAPED_UNICODE);
             exit;
         }
         
-        // 使用预处理语句防止 SQL 注入
-        $stmt = $conn->prepare("SELECT id, sku, name, removal_buffer, created_at FROM products WHERE sku = ? LIMIT 1");
+        // 连表查询分类规则
+        $stmt = $conn->prepare("
+            SELECT p.*, c.name as category_name, c.type as category_type, c.rule as category_rule 
+            FROM products p 
+            LEFT JOIN categories c ON p.category_id = c.id 
+            WHERE p.sku = ? LIMIT 1
+        ");
         $stmt->bind_param("s", $sku);
         $stmt->execute();
         $result = $stmt->get_result();
@@ -105,26 +107,39 @@ if (isset($_GET['api'])) {
             $product = $result->fetch_assoc();
             $productId = $product['id'];
             $buffer = (int)$product['removal_buffer'];
+            $rule = json_decode($product['category_rule'] ?? '{}', true);
+            $needBuffer = $rule['need_buffer'] ?? true;
             
             // 查询该商品的所有批次
-            $stmt_batch = $conn->prepare("
-                SELECT id, expiry_date, quantity, created_at 
-                FROM batches 
-                WHERE product_id = ? 
-                ORDER BY expiry_date ASC
-            ");
+            $stmt_batch = $conn->prepare("SELECT * FROM batches WHERE product_id = ? ORDER BY expiry_date ASC");
             $stmt_batch->bind_param("i", $productId);
             $stmt_batch->execute();
             $batch_result = $stmt_batch->get_result();
             
             $batches = [];
             while ($batch = $batch_result->fetch_assoc()) {
-                // 计算到期天数 (基于下架缓冲)
                 $expiryDate = $batch['expiry_date'];
-                $removalDate = date('Y-m-d', strtotime("$expiryDate - $buffer days"));
+                
+                // 根据分类规则决定是否应用缓冲
+                $effectiveBuffer = $needBuffer ? $buffer : 0;
+                $removalDate = date('Y-m-d', strtotime("$expiryDate - $effectiveBuffer days"));
                 
                 $today = date('Y-m-d');
                 $daysToRemoval = (strtotime($removalDate) - strtotime($today)) / 86400;
+                
+                // 构建AI状态描述
+                $ai_status_text = "";
+                if ($daysToRemoval < 0) {
+                    if ($product['category_type'] === 'coffee') {
+                        $ai_status_text = "⚠️ 停止销售 (可赠送)";
+                    } else {
+                        $ai_status_text = "🔴 立即下架/报废";
+                    }
+                } elseif ($daysToRemoval <= 7) {
+                    $ai_status_text = "🟡 临期紧急";
+                } else {
+                    $ai_status_text = "🟢 状态良好";
+                }
                 
                 $batches[] = [
                     'id' => $batch['id'],
@@ -132,21 +147,16 @@ if (isset($_GET['api'])) {
                     'removal_date' => $removalDate,
                     'quantity' => (int)$batch['quantity'],
                     'days_to_removal' => (int)$daysToRemoval,
-                    'status' => $daysToRemoval < 0 ? 'expired' : ($daysToRemoval <= 30 ? 'warning' : 'normal')
+                    'status' => $daysToRemoval < 0 ? 'expired' : ($daysToRemoval <= 30 ? 'warning' : 'normal'),
+                    'ai_status' => $ai_status_text
                 ];
             }
             
             echo json_encode([
                 'success' => true,
                 'exists' => true,
-                'product' => [
-                    'id' => $product['id'],
-                    'sku' => $product['sku'],
-                    'name' => $product['name'],
-                    'removal_buffer' => $buffer
-                ],
-                'batches' => $batches,
-                'message' => '查询成功'
+                'product' => $product,
+                'batches' => $batches
             ], JSON_UNESCAPED_UNICODE);
         } else {
             // 商品不存在
@@ -178,130 +188,57 @@ if (isset($_GET['api'])) {
         
         $sku = isset($data['sku']) ? trim($data['sku']) : '';
         $name = isset($data['name']) ? trim($data['name']) : '';
+        $cid = isset($data['category_id']) ? (int)$data['category_id'] : 0;
         $buffer = isset($data['removal_buffer']) ? (int)$data['removal_buffer'] : 0;
         $batches = isset($data['batches']) ? $data['batches'] : [];
         
         // 数据验证
         if (empty($sku)) {
-            echo json_encode([
-                'success' => false,
-                'message' => 'SKU 不能为空'
-            ], JSON_UNESCAPED_UNICODE);
+            echo json_encode(['success' => false, 'message' => 'SKU 不能为空'], JSON_UNESCAPED_UNICODE);
             exit;
         }
         
         if (empty($name)) {
-            echo json_encode([
-                'success' => false,
-                'message' => '商品名称不能为空'
-            ], JSON_UNESCAPED_UNICODE);
+            echo json_encode(['success' => false, 'message' => '商品名称不能为空'], JSON_UNESCAPED_UNICODE);
             exit;
         }
         
-        if (empty($batches) || !is_array($batches)) {
-            echo json_encode([
-                'success' => false,
-                'message' => '至少需要添加一个批次'
-            ], JSON_UNESCAPED_UNICODE);
-            exit;
-        }
-        
-        // 验证批次数据
-        foreach ($batches as $index => $batch) {
-            if (empty($batch['expiry_date'])) {
-                echo json_encode([
-                    'success' => false,
-                    'message' => "第 " . ($index + 1) . " 个批次的到期日期不能为空"
-                ], JSON_UNESCAPED_UNICODE);
-                exit;
-            }
-            
-            if (!isset($batch['quantity']) || $batch['quantity'] < 0) {
-                echo json_encode([
-                    'success' => false,
-                    'message' => "第 " . ($index + 1) . " 个批次的数量无效"
-                ], JSON_UNESCAPED_UNICODE);
-                exit;
-            }
-        }
-        
-        // 开始事务（确保数据一致性）
+        // 开始事务
         $conn->begin_transaction();
         
         try {
-            // 检查商品是否已存在
             $stmt_check = $conn->prepare("SELECT id FROM products WHERE sku = ? LIMIT 1");
             $stmt_check->bind_param("s", $sku);
             $stmt_check->execute();
             $check_result = $stmt_check->get_result();
             
             $productId = null;
-            
-            if ($check_result->num_rows > 0) {
-                // 商品已存在，更新名称和缓冲
-                $row = $check_result->fetch_assoc();
+            if ($row = $check_result->fetch_assoc()) {
                 $productId = $row['id'];
-                
-                $stmt_update = $conn->prepare("UPDATE products SET name = ?, removal_buffer = ? WHERE id = ?");
-                $stmt_update->bind_param("sii", $name, $buffer, $productId);
+                $stmt_update = $conn->prepare("UPDATE products SET name = ?, category_id = ?, removal_buffer = ? WHERE id = ?");
+                $stmt_update->bind_param("siii", $name, $cid, $buffer, $productId);
                 $stmt_update->execute();
                 
-                // 删除旧批次（根据业务需求，也可以选择保留历史批次）
-                $stmt_delete = $conn->prepare("DELETE FROM batches WHERE product_id = ?");
-                $stmt_delete->bind_param("i", $productId);
-                $stmt_delete->execute();
+                $conn->query("DELETE FROM batches WHERE product_id = $productId");
             } else {
-                // 新商品，插入记录
-                $stmt_insert = $conn->prepare("INSERT INTO products (sku, name, removal_buffer) VALUES (?, ?, ?)");
-                $stmt_insert->bind_param("ssi", $sku, $name, $buffer);
+                $stmt_insert = $conn->prepare("INSERT INTO products (sku, name, category_id, removal_buffer) VALUES (?, ?, ?, ?)");
+                $stmt_insert->bind_param("ssii", $sku, $name, $cid, $buffer);
                 $stmt_insert->execute();
                 $productId = $conn->insert_id;
             }
             
-            // 批量插入批次数据
             $stmt_batch = $conn->prepare("INSERT INTO batches (product_id, expiry_date, quantity) VALUES (?, ?, ?)");
-            
             foreach ($batches as $batch) {
-                $expiryDate = $batch['expiry_date'];
-                $quantity = (int)$batch['quantity'];
-                
-                $stmt_batch->bind_param("isi", $productId, $expiryDate, $quantity);
+                $stmt_batch->bind_param("isi", $productId, $batch['expiry_date'], $batch['quantity']);
                 $stmt_batch->execute();
             }
             
-            // 记录日志
-            addLog("保存商品", "SKU: $sku, 名称: $name, 提前下架: $buffer 天, 批次数: " . count($batches));
-
-            // 提交事务
+            addLog("保存商品", "SKU: $sku, 分类ID: $cid, 缓冲: $buffer");
             $conn->commit();
-            
-            // 记录日志
-            logError("商品保存成功", [
-                'sku' => $sku,
-                'name' => $name,
-                'batches_count' => count($batches)
-            ]);
-            
-            echo json_encode([
-                'success' => true,
-                'message' => '保存成功！',
-                'product_id' => $productId,
-                'batches_added' => count($batches)
-            ], JSON_UNESCAPED_UNICODE);
-            
+            echo json_encode(['success' => true, 'message' => '保存成功！', 'product_id' => $productId]);
         } catch (Exception $e) {
-            // 回滚事务
             $conn->rollback();
-            
-            logError("商品保存失败: " . $e->getMessage(), [
-                'sku' => $sku,
-                'name' => $name
-            ]);
-            
-            echo json_encode([
-                'success' => false,
-                'message' => '保存失败：' . $e->getMessage()
-            ], JSON_UNESCAPED_UNICODE);
+            echo json_encode(['success' => false, 'message' => '保存失败: ' . $e->getMessage()]);
         }
         exit;
     }
@@ -554,14 +491,15 @@ if (isset($_GET['api'])) {
     // API 12: 获取健康报告数据
     // ========================================
     if ($action === 'get_health_report') {
-        // 过期数据分布 (基于下架日期)
+        // 过期数据分布 (基于下架日期，关联分类规则)
         $query = "
             SELECT 
-                SUM(CASE WHEN DATE_SUB(expiry_date, INTERVAL (SELECT removal_buffer FROM products WHERE id = product_id) DAY) < CURDATE() THEN 1 ELSE 0 END) as expired,
-                SUM(CASE WHEN DATE_SUB(expiry_date, INTERVAL (SELECT removal_buffer FROM products WHERE id = product_id) DAY) BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY) THEN 1 ELSE 0 END) as urgent,
-                SUM(CASE WHEN DATE_SUB(expiry_date, INTERVAL (SELECT removal_buffer FROM products WHERE id = product_id) DAY) BETWEEN DATE_ADD(CURDATE(), INTERVAL 8 DAY) AND DATE_ADD(CURDATE(), INTERVAL 30 DAY) THEN 1 ELSE 0 END) as warning,
-                SUM(CASE WHEN DATE_SUB(expiry_date, INTERVAL (SELECT removal_buffer FROM products WHERE id = product_id) DAY) > DATE_ADD(CURDATE(), INTERVAL 30 DAY) THEN 1 ELSE 0 END) as healthy
-            FROM batches
+                SUM(CASE WHEN DATE_SUB(b.expiry_date, INTERVAL p.removal_buffer DAY) < CURDATE() THEN 1 ELSE 0 END) as expired,
+                SUM(CASE WHEN DATE_SUB(b.expiry_date, INTERVAL p.removal_buffer DAY) BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY) THEN 1 ELSE 0 END) as urgent,
+                SUM(CASE WHEN DATE_SUB(b.expiry_date, INTERVAL p.removal_buffer DAY) BETWEEN DATE_ADD(CURDATE(), INTERVAL 8 DAY) AND DATE_ADD(CURDATE(), INTERVAL 30 DAY) THEN 1 ELSE 0 END) as warning,
+                SUM(CASE WHEN DATE_SUB(b.expiry_date, INTERVAL p.removal_buffer DAY) > DATE_ADD(CURDATE(), INTERVAL 30 DAY) THEN 1 ELSE 0 END) as healthy
+            FROM batches b
+            JOIN products p ON b.product_id = p.id
         ";
         $data = $conn->query($query)->fetch_assoc();
         echo json_encode(['success' => true, 'report' => $data]);
@@ -569,14 +507,33 @@ if (isset($_GET['api'])) {
     }
 
     // ========================================
-    // API 13: 获取最新日志
+    // API 14: 获取全部分类
     // ========================================
-    if ($action === 'get_logs') {
-        $query = "SELECT l.*, u.username FROM logs l LEFT JOIN users u ON l.user_id = u.id ORDER BY l.created_at DESC LIMIT 10";
-        $res = $conn->query($query);
-        $logs = [];
-        while($row = $res->fetch_assoc()) $logs[] = $row;
-        echo json_encode(['success' => true, 'logs' => $logs]);
+    if ($action === 'get_categories') {
+        $res = $conn->query("SELECT * FROM categories ORDER BY id ASC");
+        $list = [];
+        while($row = $res->fetch_assoc()) $list[] = $row;
+        echo json_encode(['success' => true, 'categories' => $list]);
+        exit;
+    }
+
+    // ========================================
+    // API 15: 保存分类
+    // ========================================
+    if ($action === 'save_category') {
+        $json = file_get_contents('php://input');
+        $data = json_decode($json, true);
+        $name = $data['name'] ?? '';
+        $type = $data['type'] ?? '';
+        $rule = $data['rule'] ?? '';
+
+        $stmt = $conn->prepare("INSERT INTO categories (name, type, rule) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE type=VALUES(type), rule=VALUES(rule)");
+        $stmt->bind_param("sss", $name, $type, $rule);
+        if ($stmt->execute()) {
+            echo json_encode(['success' => true, 'message' => '分类保存成功']);
+        } else {
+            echo json_encode(['success' => false, 'message' => '保存失败']);
+        }
         exit;
     }
 
@@ -918,7 +875,7 @@ if (isset($_GET['api'])) {
                 <div class="d-flex gap-2">
                     <?php if (isset($_SESSION['user_id'])): ?>
                     <button class="btn btn-primary btn-sm" id="settingsBtn" data-bs-toggle="modal" data-bs-target="#settingsModal">
-                        <i class="bi bi-gear"></i> 管理设置
+                        <i class="bi bi-gear"></i> 管理中心
                     </button>
                     <button class="btn btn-outline-light btn-sm" id="logoutBtn">
                         <i class="bi bi-box-arrow-right"></i> 退出
@@ -1068,12 +1025,21 @@ if (isset($_GET['api'])) {
             
             <form id="productForm">
                 <!-- SKU 输入 -->
-                <div class="form-floating mb-3">
-                    <input type="text" class="form-control" id="sku" name="sku" 
-                           placeholder="SKU/条形码" required>
-                    <label for="sku">
-                        <i class="bi bi-upc-scan"></i> SKU / 条形码
-                    </label>
+                <div class="row g-2 mb-3">
+                    <div class="col-8">
+                        <div class="form-floating">
+                            <input type="text" class="form-control" id="sku" name="sku" placeholder="SKU/条形码" required>
+                            <label for="sku"><i class="bi bi-upc-scan"></i> SKU / 条形码</label>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="form-floating">
+                            <select class="form-select" id="categoryId" name="categoryId">
+                                <option value="0">默认无分类</option>
+                            </select>
+                            <label for="categoryId"><i class="bi bi-grid"></i> 商品分类</label>
+                        </div>
+                    </div>
                 </div>
                 
                 <!-- 商品名称输入 -->
@@ -1151,6 +1117,9 @@ if (isset($_GET['api'])) {
                             <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#userTab">用户管理</button>
                         </li>
                         <li class="nav-item">
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#categoryTab">分类规则</button>
+                        </li>
+                        <li class="nav-item">
                             <button class="nav-link" data-bs-toggle="tab" data-bs-target="#aiTab">AI 与预警</button>
                         </li>
                     </ul>
@@ -1180,6 +1149,35 @@ if (isset($_GET['api'])) {
                                         <select class="form-select form-select-sm mb-2" id="resetUserId"></select>
                                         <input type="password" class="form-control form-control-sm mb-2" id="resetNewPass" placeholder="新密码" required>
                                         <button type="submit" class="btn btn-warning btn-sm w-100 text-white">直接重置</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- 分类规则 -->
+                        <div class="tab-pane fade" id="categoryTab">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6>分类列表</h6>
+                                    <div id="categoryListContainer" class="list-group small"></div>
+                                </div>
+                                <div class="col-md-6 border-start">
+                                    <h6>编辑/新增分类</h6>
+                                    <form id="categoryForm">
+                                        <input type="text" class="form-control form-control-sm mb-2" id="catName" placeholder="分类名称 (如: 小食品)" required>
+                                        <select class="form-select form-select-sm mb-2" id="catType">
+                                            <option value="snack">小食品 (提前下架+报废)</option>
+                                            <option value="material">物料 (不需要提前下架)</option>
+                                            <option value="coffee">咖啡豆 (提前下架+可赠送)</option>
+                                        </select>
+                                        <div class="form-check form-switch small mb-2">
+                                            <input class="form-check-input" type="checkbox" id="catNeedBuffer" checked>
+                                            <label class="form-check-label">启用提前下架缓冲</label>
+                                        </div>
+                                        <div class="form-check form-switch small mb-2">
+                                            <input class="form-check-input" type="checkbox" id="catScrapOnRemoval">
+                                            <label class="form-check-label">下架即报废</label>
+                                        </div>
+                                        <button type="submit" class="btn btn-success btn-sm w-100">保存分类</button>
                                     </form>
                                 </div>
                             </div>
@@ -1412,6 +1410,31 @@ if (isset($_GET['api'])) {
                 settingsBtn.addEventListener('click', () => {
                     loadUserList();
                     loadAISettings();
+                    loadCategories();
+                });
+            }
+
+            // 分类表单处理
+            const categoryForm = document.getElementById('categoryForm');
+            if (categoryForm) {
+                categoryForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const name = document.getElementById('catName').value;
+                    const type = document.getElementById('catType').value;
+                    const rule = JSON.stringify({
+                        need_buffer: document.getElementById('catNeedBuffer').checked,
+                        scrap_on_removal: document.getElementById('catScrapOnRemoval').checked
+                    });
+                    const resp = await fetch('index.php?api=save_category', {
+                        method: 'POST',
+                        body: JSON.stringify({ name, type, rule })
+                    });
+                    const data = await resp.json();
+                    if (data.success) {
+                        showAlert(data.message, 'success');
+                        loadCategories();
+                        categoryForm.reset();
+                    }
                 });
             }
 
@@ -1537,6 +1560,27 @@ if (isset($_GET['api'])) {
                 document.getElementById('ai_model').value = data.settings.ai_model;
                 document.getElementById('alert_email').value = data.settings.alert_email;
                 document.getElementById('alert_days').value = data.settings.alert_days;
+            }
+        }
+
+        async function loadCategories() {
+            const resp = await fetch('index.php?api=get_categories');
+            const data = await resp.json();
+            if (data.success) {
+                // 更新分类列表
+                const container = document.getElementById('categoryListContainer');
+                container.innerHTML = data.categories.map(c => `
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        ${c.name} <span class="badge bg-info">${c.type}</span>
+                    </div>
+                `).join('');
+
+                // 更新商品录入页面的下拉框
+                const select = document.getElementById('categoryId');
+                if (select) {
+                    select.innerHTML = '<option value="0">默认无分类</option>' + 
+                        data.categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+                }
             }
         }
 
@@ -1745,6 +1789,7 @@ if (isset($_GET['api'])) {
                     if (data.exists) {
                         // 商品存在，回显信息
                         document.getElementById('productName').value = data.product.name;
+                        document.getElementById('categoryId').value = data.product.category_id || 0;
                         document.getElementById('removalBuffer').value = data.product.removal_buffer || 0;
                         
                         // 显示已有批次
@@ -1754,6 +1799,7 @@ if (isset($_GET['api'])) {
                     } else {
                         // 商品不存在，准备新建
                         document.getElementById('productName').value = '';
+                        document.getElementById('categoryId').value = 0;
                         document.getElementById('removalBuffer').value = 0;
                         clearBatches();
                         addBatchRow();

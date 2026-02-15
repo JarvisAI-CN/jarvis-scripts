@@ -13,6 +13,7 @@ USE `expiry_system`;
 -- ========================================
 CREATE TABLE IF NOT EXISTS `products` (
   `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '商品ID',
+  `category_id` INT(11) UNSIGNED DEFAULT 0 COMMENT '分类ID',
   `sku` VARCHAR(100) NOT NULL COMMENT '商品SKU/条形码',
   `name` VARCHAR(200) NOT NULL COMMENT '商品名称',
   `removal_buffer` INT(5) UNSIGNED DEFAULT 0 COMMENT '提前下架天数',
@@ -20,8 +21,28 @@ CREATE TABLE IF NOT EXISTS `products` (
   `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_sku` (`sku`),
-  KEY `idx_name` (`name`)
+  KEY `idx_name` (`name`),
+  KEY `idx_category` (`category_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='商品基础信息表';
+
+-- ========================================
+-- 1.1 商品分类表 (categories)
+-- ========================================
+CREATE TABLE IF NOT EXISTS `categories` (
+  `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `name` VARCHAR(50) NOT NULL,
+  `type` VARCHAR(20) NOT NULL COMMENT '小食品, 物料, 咖啡豆',
+  `rule` TEXT COMMENT 'JSON格式的规则定义',
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_name` (`name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='商品分类表';
+
+-- 初始化默认分类
+INSERT IGNORE INTO `categories` (`name`, `type`, `rule`) VALUES 
+('小食品', 'snack', '{"need_buffer":true, "scrap_on_removal":true}'),
+('物料', 'material', '{"need_buffer":false, "scrap_on_removal":false}'),
+('咖啡豆', 'coffee', '{"need_buffer":true, "scrap_on_removal":false, "allow_gift":true}');
 
 -- ========================================
 -- 2. 批次有效期表 (batches)
