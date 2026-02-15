@@ -18,7 +18,7 @@
  */
 
 // 升级配置
-define('APP_VERSION', '2.1.3-alpha');
+define('APP_VERSION', '2.2.0-alpha');
 define('UPDATE_URL', 'https://raw.githubusercontent.com/JarvisAI-CN/expiry-management-system/main/');
 
 // 启动 Session
@@ -1230,6 +1230,26 @@ if (isset($_GET['api'])) {
             }
         }
         
+        /**
+         * 切换商品基本信息的编辑状态
+         * @param {boolean} readonly - 是否只读
+         */
+        function toggleProductFields(readonly) {
+            const fields = ['sku', 'categoryId', 'productName', 'removalBuffer'];
+            fields.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.readOnly = readonly;
+                    if (el.tagName === 'SELECT') {
+                        el.disabled = readonly;
+                    }
+                    // 样式反馈
+                    el.style.backgroundColor = readonly ? '#f8f9fa' : '#fff';
+                    el.style.color = readonly ? '#6c757d' : '#212529';
+                }
+            });
+        }
+
         // 页面加载时获取统计数据
         document.addEventListener('DOMContentLoaded', function() {
             // 检查版本更新
@@ -1654,26 +1674,33 @@ if (isset($_GET['api'])) {
                 const response = await fetch(`index.php?api=get_product&sku=${encodeURIComponent(sku)}`);
                 const data = await response.json();
                 
-                if (data.success) {
+        if (data.success) {
                     if (data.exists) {
-                        // 商品存在，回显信息
+                        // 商品存在，填充并锁定字段 (只读模式)
                         document.getElementById('productName').value = data.product.name;
                         document.getElementById('categoryId').value = data.product.category_id || 0;
                         document.getElementById('removalBuffer').value = data.product.removal_buffer || 0;
                         
+                        // 锁定核心字段，防止误改
+                        toggleProductFields(true);
+                        
                         // 显示已有批次
                         displayBatches(data.batches);
                         
-                        showAlert(`已加载商品: ${data.product.name}`, 'success');
+                        showAlert(`识别成功: ${data.product.name} (已自动填充并锁定信息)`, 'success');
                     } else {
-                        // 商品不存在，准备新建
+                        // 商品不存在，进入新增模式
                         document.getElementById('productName').value = '';
                         document.getElementById('categoryId').value = 0;
                         document.getElementById('removalBuffer').value = 0;
+                        
+                        // 解锁字段，允许编辑
+                        toggleProductFields(false);
+                        
                         clearBatches();
                         addBatchRow();
                         
-                        showAlert('新商品，请输入商品名称', 'info');
+                        showAlert('新商品，请完善分类、名称及下架设置', 'info');
                     }
                 } else {
                     showAlert(data.message || '查询失败', 'danger');
@@ -1852,6 +1879,7 @@ if (isset($_GET['api'])) {
          */
         document.getElementById('resetFormBtn')?.addEventListener('click', function() {
             document.getElementById('productForm').reset();
+            toggleProductFields(false); // 重置时恢复可编辑
             clearBatches();
             addBatchRow();
         });
