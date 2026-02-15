@@ -46,6 +46,7 @@ Add whatever helps you do your job. This is your cheat sheet.
 - 123盘WebDAV: /home/ubuntu/123pan
 - VNC服务器: localhost:5901 (密码见PASSWORDS.md)
 - 内网IP: 10.7.0.5
+- 公网IP: 150.109.204.23 (用于外部访问)
 - GitHub: https://github.com/JarvisAI-CN (账号凭证见PASSWORDS.md)
 
 ### 系统路径

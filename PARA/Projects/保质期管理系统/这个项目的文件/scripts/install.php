@@ -70,6 +70,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
               `sku` VARCHAR(100) NOT NULL,
               `name` VARCHAR(200) NOT NULL,
               `removal_buffer` INT(5) UNSIGNED DEFAULT 0,
+              `inventory_cycle` VARCHAR(20) DEFAULT 'none',
+              `last_inventory_at` DATETIME DEFAULT NULL,
               `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
               `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
               PRIMARY KEY (`id`),
@@ -81,10 +83,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
               `product_id` INT(11) UNSIGNED NOT NULL,
               `expiry_date` DATE NOT NULL,
               `quantity` INT(11) UNSIGNED NOT NULL DEFAULT 0,
+              `session_id` VARCHAR(50) DEFAULT NULL,
               `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
               `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
               PRIMARY KEY (`id`),
               CONSTRAINT `fk_batches_products` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+            CREATE TABLE IF NOT EXISTS `inventory_sessions` (
+              `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+              `session_key` VARCHAR(50) NOT NULL,
+              `user_id` INT(11) UNSIGNED,
+              `item_count` INT(11) DEFAULT 0,
+              `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+              PRIMARY KEY (`id`),
+              UNIQUE KEY `uk_session_key` (`session_key`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
             CREATE TABLE IF NOT EXISTS `users` (

@@ -17,6 +17,8 @@ CREATE TABLE IF NOT EXISTS `products` (
   `sku` VARCHAR(100) NOT NULL COMMENT '商品SKU/条形码',
   `name` VARCHAR(200) NOT NULL COMMENT '商品名称',
   `removal_buffer` INT(5) UNSIGNED DEFAULT 0 COMMENT '提前下架天数',
+  `inventory_cycle` VARCHAR(20) DEFAULT 'none' COMMENT '盘点周期: daily, weekly, monthly, yearly, none',
+  `last_inventory_at` DATETIME DEFAULT NULL COMMENT '上次盘点时间',
   `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`),
