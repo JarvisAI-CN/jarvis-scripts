@@ -39,6 +39,50 @@ function getDBConnection() {
     }
 }
 
+/**
+ * 获取设置项
+ */
+function getSetting($key, $default = '') {
+    $conn = getDBConnection();
+    if (!$conn) return $default;
+    
+    $stmt = $conn->prepare("SELECT s_value FROM settings WHERE s_key = ? LIMIT 1");
+    $stmt->bind_param("s", $key);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    if ($row = $result->fetch_assoc()) {
+        return $row['s_value'];
+    }
+    return $default;
+}
+
+/**
+ * 保存设置项
+ */
+function setSetting($key, $value) {
+    $conn = getDBConnection();
+    if (!$conn) return false;
+    
+    $stmt = $conn->prepare("INSERT INTO settings (s_key, s_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE s_value = VALUES(s_value)");
+    $stmt->bind_param("ss", $key, $value);
+    return $stmt->execute();
+}
+
+/**
+ * 检查登录状态
+ */
+function checkAuth() {
+    if (!isset($_SESSION['user_id'])) {
+        if (isset($_GET['api'])) {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'message' => '请先登录'], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+        return false;
+    }
+    return true;
+}
+
 function escapeValue($conn, $value) {
     return $conn->real_escape_string($value);
 }

@@ -3,21 +3,21 @@
  * ========================================
  * 保质期管理系统 - 主页面（完整版）
  * 文件名: index.php
- * 版本: v1.1.0
+ * 版本: v1.2.0
  * 创建日期: 2026-02-15
  * ========================================
  * 功能说明：
- * 1. 扫码录入商品批次信息 (含成功提示音)
- * 2. 动态添加/删除批次
- * 3. 商品查询和回显
- * 4. 批次到期状态提醒
- * 5. 数据统计和导出 (AI 整理排序)
- * 6. 在线一键升级功能
+ * 1. 权限控制: 仅登录用户可访问盘点功能
+ * 2. 用户管理: 后台添加用户、无感重置密码
+ * 3. AI 配置: 自定义 API 地址、Key 和模型
+ * 4. 扫码录入: 成功提示音
+ * 5. 数据导出: AI 整理排序
+ * 6. 一键升级: 在线热更新
  * ========================================
  */
 
 // 升级配置
-define('APP_VERSION', '1.1.0');
+define('APP_VERSION', '1.2.0');
 define('UPDATE_URL', 'https://raw.githubusercontent.com/JarvisAI-CN/expiry-management-system/main/');
 
 // 启动 Session
@@ -38,12 +38,47 @@ if (isset($_GET['api'])) {
     // 获取数据库连接
     $conn = getDBConnection();
     if (!$conn) {
-        echo json_encode([
-            'success' => false,
-            'message' => '数据库连接失败，请联系管理员'
-        ], JSON_UNESCAPED_UNICODE);
+        echo json_encode(['success' => false, 'message' => '数据库连接失败'], JSON_UNESCAPED_UNICODE);
         exit;
     }
+
+    // ========================================
+    // 公开 API: 登录
+    // ========================================
+    if ($action === 'login') {
+        $json = file_get_contents('php://input');
+        $data = json_decode($json, true);
+        $user = $data['username'] ?? '';
+        $pass = $data['password'] ?? '';
+
+        $stmt = $conn->prepare("SELECT id, username, password FROM users WHERE username = ? LIMIT 1");
+        $stmt->bind_param("s", $user);
+        $stmt->execute();
+        $res = $stmt->get_result();
+
+        if ($row = $res->fetch_assoc()) {
+            if (password_verify($pass, $row['password'])) {
+                $_SESSION['user_id'] = $row['id'];
+                $_SESSION['username'] = $row['username'];
+                echo json_encode(['success' => true, 'message' => '登录成功']);
+                exit;
+            }
+        }
+        echo json_encode(['success' => false, 'message' => '账号或密码错误']);
+        exit;
+    }
+
+    // ========================================
+    // 公开 API: 登出
+    // ========================================
+    if ($action === 'logout') {
+        session_destroy();
+        echo json_encode(['success' => true, 'message' => '已成功登出']);
+        exit;
+    }
+
+    // --- 以下 API 均需要登录 ---
+    checkAuth();
     
     // ========================================
     // API 1: 根据 SKU 查询商品信息
@@ -405,6 +440,100 @@ if (isset($_GET['api'])) {
         exit;
     }
 
+    // ========================================
+    // API 7: 获取用户列表
+    // ========================================
+    if ($action === 'get_users') {
+        $result = $conn->query("SELECT id, username, created_at FROM users");
+        $users = [];
+        while ($row = $result->fetch_assoc()) {
+            $users[] = $row;
+        }
+        echo json_encode(['success' => true, 'users' => $users]);
+        exit;
+    }
+
+    // ========================================
+    // API 8: 添加用户
+    // ========================================
+    if ($action === 'add_user') {
+        $json = file_get_contents('php://input');
+        $data = json_decode($json, true);
+        $user = $data['username'] ?? '';
+        $pass = $data['password'] ?? '';
+
+        if (empty($user) || empty($pass)) {
+            echo json_encode(['success' => false, 'message' => '请填写完整信息']);
+            exit;
+        }
+
+        $hashed = password_hash($pass, PASSWORD_DEFAULT);
+        $stmt = $conn->prepare("INSERT INTO users (username, password) VALUES (?, ?)");
+        $stmt->bind_param("ss", $user, $hashed);
+        if ($stmt->execute()) {
+            echo json_encode(['success' => true, 'message' => '用户添加成功']);
+        } else {
+            echo json_encode(['success' => false, 'message' => '用户名已存在']);
+        }
+        exit;
+    }
+
+    // ========================================
+    // API 9: 修改密码 (无验证)
+    // ========================================
+    if ($action === 'reset_password') {
+        $json = file_get_contents('php://input');
+        $data = json_decode($json, true);
+        $uid = $data['user_id'] ?? 0;
+        $new_pass = $data['new_password'] ?? '';
+
+        if (empty($uid) || empty($new_pass)) {
+            echo json_encode(['success' => false, 'message' => '参数错误']);
+            exit;
+        }
+
+        $hashed = password_hash($new_pass, PASSWORD_DEFAULT);
+        $stmt = $conn->prepare("UPDATE users SET password = ? WHERE id = ?");
+        $stmt->bind_param("si", $hashed, $uid);
+        if ($stmt->execute()) {
+            echo json_encode(['success' => true, 'message' => '密码修改成功']);
+        } else {
+            echo json_encode(['success' => false, 'message' => '修改失败']);
+        }
+        exit;
+    }
+
+    // ========================================
+    // API 10: 保存 AI 设置
+    // ========================================
+    if ($action === 'save_settings') {
+        $json = file_get_contents('php://input');
+        $data = json_decode($json, true);
+        
+        $success = true;
+        foreach ($data as $key => $value) {
+            if (!setSetting($key, $value)) $success = false;
+        }
+        
+        echo json_encode(['success' => $success, 'message' => $success ? '设置保存成功' : '部分设置保存失败']);
+        exit;
+    }
+
+    // ========================================
+    // API 11: 获取当前设置
+    // ========================================
+    if ($action === 'get_settings') {
+        echo json_encode([
+            'success' => true,
+            'settings' => [
+                'ai_api_url' => getSetting('ai_api_url'),
+                'ai_api_key' => getSetting('ai_api_key'),
+                'ai_model' => getSetting('ai_model')
+            ]
+        ]);
+        exit;
+    }
+
     // 未知的 API 请求
     echo json_encode([
         'success' => false,
@@ -741,6 +870,14 @@ if (isset($_GET['api'])) {
                     </div>
                 </div>
                 <div class="d-flex gap-2">
+                    <?php if (isset($_SESSION['user_id'])): ?>
+                    <button class="btn btn-primary btn-sm" id="settingsBtn" data-bs-toggle="modal" data-bs-target="#settingsModal">
+                        <i class="bi bi-gear"></i> 管理设置
+                    </button>
+                    <button class="btn btn-outline-light btn-sm" id="logoutBtn">
+                        <i class="bi bi-box-arrow-right"></i> 退出
+                    </button>
+                    <?php endif; ?>
                     <button class="btn btn-info btn-sm text-white d-none" id="upgradeBtn">
                         <i class="bi bi-cloud-arrow-up"></i> 发现新版本
                     </button>
@@ -756,6 +893,30 @@ if (isset($_GET['api'])) {
     </div>
 
     <div class="container">
+        <?php if (!isset($_SESSION['user_id'])): ?>
+        <!-- 登录界面 -->
+        <div class="row justify-content-center">
+            <div class="col-md-5">
+                <div class="custom-card fade-in text-center mt-5">
+                    <h3 class="mb-4 fw-bold text-primary">⚡ 请先登录</h3>
+                    <form id="loginForm">
+                        <div class="form-floating mb-3">
+                            <input type="text" class="form-control" id="loginUser" placeholder="用户名" required>
+                            <label for="loginUser">用户名</label>
+                        </div>
+                        <div class="form-floating mb-4">
+                            <input type="password" class="form-control" id="loginPass" placeholder="密码" required>
+                            <label for="loginPass">密码</label>
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg">进入系统</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <?php else: ?>
+        <!-- 盘点功能 (已登录可见) -->
         <!-- 统计卡片 -->
         <div class="row mb-4">
             <div class="col-6 col-md-3 mb-3">
@@ -882,6 +1043,78 @@ if (isset($_GET['api'])) {
                 <li class="mb-2">点击"添加批次"可录入多个批次（到期日期 + 数量）</li>
                 <li class="mb-2">点击"保存商品信息"完成数据录入</li>
             </ol>
+        </div>
+        <?php endif; ?>
+    </div>
+
+    <!-- 管理设置模态框 -->
+    <div class="modal fade" id="settingsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content" style="border-radius: 15px;">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-gear-wide-connected"></i> 管理中心</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <ul class="nav nav-tabs mb-3" id="settingsTabs">
+                        <li class="nav-item">
+                            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#userTab">用户管理</button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#aiTab">AI 配置</button>
+                        </li>
+                    </ul>
+                    <div class="tab-content">
+                        <!-- 用户管理 -->
+                        <div class="tab-pane fade show active" id="userTab">
+                            <div class="row">
+                                <div class="col-md-7">
+                                    <h6>当前用户</h6>
+                                    <div class="table-responsive">
+                                        <table class="table table-sm table-hover align-middle">
+                                            <thead><tr><th>用户名</th><th>操作</th></tr></thead>
+                                            <tbody id="userListBody"></tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                <div class="col-md-5 border-start">
+                                    <h6>添加新用户</h6>
+                                    <form id="addUserForm">
+                                        <input type="text" class="form-control form-control-sm mb-2" id="newUsername" placeholder="用户名" required>
+                                        <input type="password" class="form-control form-control-sm mb-2" id="newUserPass" placeholder="密码" required>
+                                        <button type="submit" class="btn btn-primary btn-sm w-100">添加</button>
+                                    </form>
+                                    <hr>
+                                    <h6>重置用户密码</h6>
+                                    <form id="resetPassForm">
+                                        <select class="form-select form-select-sm mb-2" id="resetUserId"></select>
+                                        <input type="password" class="form-control form-control-sm mb-2" id="resetNewPass" placeholder="新密码" required>
+                                        <button type="submit" class="btn btn-warning btn-sm w-100 text-white">直接重置</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- AI 配置 -->
+                        <div class="tab-pane fade" id="aiTab">
+                            <form id="aiSettingsForm">
+                                <div class="mb-3">
+                                    <label class="form-label small">API 接口地址 (Base URL)</label>
+                                    <input type="text" class="form-control" id="ai_api_url" placeholder="https://api.openai.com/v1">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label small">API Key</label>
+                                    <input type="password" class="form-control" id="ai_api_key">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label small">模型名称 (Model)</label>
+                                    <input type="text" class="form-control" id="ai_model" placeholder="gpt-4o">
+                                </div>
+                                <button type="submit" class="btn btn-success w-100">保存 AI 设置</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -1010,21 +1243,159 @@ if (isset($_GET['api'])) {
         
         // 页面加载时获取统计数据
         document.addEventListener('DOMContentLoaded', function() {
-            loadStatistics();
+            // 检查版本更新
+            checkUpgrade();
+
+            // 如果已经登录，加载统计
+            if (document.getElementById('statProducts')) {
+                loadStatistics();
+            }
             
             // 刷新统计按钮
-            document.getElementById('refreshStatsBtn').addEventListener('click', function() {
-                loadStatistics();
-                showAlert('统计数据已刷新', 'success');
-            });
+            if (document.getElementById('refreshStatsBtn')) {
+                document.getElementById('refreshStatsBtn').addEventListener('click', function() {
+                    loadStatistics();
+                    showAlert('统计数据已刷新', 'success');
+                });
+            }
 
             // 导出盘点表按钮
-            document.getElementById('exportBtn').addEventListener('click', function() {
-                window.location.href = 'index.php?api=export_inventory';
-                showAlert('正在生成 AI 整理的盘点表...', 'info');
-            });
+            if (document.getElementById('exportBtn')) {
+                document.getElementById('exportBtn').addEventListener('click', function() {
+                    window.location.href = 'index.php?api=export_inventory';
+                    showAlert('正在生成 AI 整理的盘点表...', 'info');
+                });
+            }
+
+            // 登录处理
+            const loginForm = document.getElementById('loginForm');
+            if (loginForm) {
+                loginForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const username = document.getElementById('loginUser').value;
+                    const password = document.getElementById('loginPass').value;
+                    const resp = await fetch('index.php?api=login', {
+                        method: 'POST',
+                        body: JSON.stringify({ username, password })
+                    });
+                    const data = await resp.json();
+                    if (data.success) {
+                        showAlert('登录成功，欢迎回来', 'success');
+                        setTimeout(() => location.reload(), 1000);
+                    } else {
+                        showAlert(data.message, 'danger');
+                    }
+                });
+            }
+
+            // 登出处理
+            const logoutBtn = document.getElementById('logoutBtn');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', async () => {
+                    await fetch('index.php?api=logout');
+                    location.reload();
+                });
+            }
+
+            // 设置相关初始化
+            const settingsBtn = document.getElementById('settingsBtn');
+            if (settingsBtn) {
+                settingsBtn.addEventListener('click', () => {
+                    loadUserList();
+                    loadAISettings();
+                });
+            }
+
+            // 添加用户处理
+            const addUserForm = document.getElementById('addUserForm');
+            if (addUserForm) {
+                addUserForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const username = document.getElementById('newUsername').value;
+                    const password = document.getElementById('newUserPass').value;
+                    const resp = await fetch('index.php?api=add_user', {
+                        method: 'POST',
+                        body: JSON.stringify({ username, password })
+                    });
+                    const data = await resp.json();
+                    if (data.success) {
+                        showAlert(data.message, 'success');
+                        addUserForm.reset();
+                        loadUserList();
+                    } else {
+                        showAlert(data.message, 'danger');
+                    }
+                });
+            }
+
+            // 重置密码处理
+            const resetPassForm = document.getElementById('resetPassForm');
+            if (resetPassForm) {
+                resetPassForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const user_id = document.getElementById('resetUserId').value;
+                    const new_password = document.getElementById('resetNewPass').value;
+                    const resp = await fetch('index.php?api=reset_password', {
+                        method: 'POST',
+                        body: JSON.stringify({ user_id, new_password })
+                    });
+                    const data = await resp.json();
+                    if (data.success) {
+                        showAlert(data.message, 'success');
+                        resetPassForm.reset();
+                    } else {
+                        showAlert(data.message, 'danger');
+                    }
+                });
+            }
+
+            // AI 设置处理
+            const aiSettingsForm = document.getElementById('aiSettingsForm');
+            if (aiSettingsForm) {
+                aiSettingsForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const ai_api_url = document.getElementById('ai_api_url').value;
+                    const ai_api_key = document.getElementById('ai_api_key').value;
+                    const ai_model = document.getElementById('ai_model').value;
+                    const resp = await fetch('index.php?api=save_settings', {
+                        method: 'POST',
+                        body: JSON.stringify({ ai_api_url, ai_api_key, ai_model })
+                    });
+                    const data = await resp.json();
+                    if (data.success) {
+                        showAlert(data.message, 'success');
+                    } else {
+                        showAlert(data.message, 'danger');
+                    }
+                });
+            }
         });
-        
+
+        async function loadUserList() {
+            const resp = await fetch('index.php?api=get_users');
+            const data = await resp.json();
+            if (data.success) {
+                const tbody = document.getElementById('userListBody');
+                const select = document.getElementById('resetUserId');
+                tbody.innerHTML = '';
+                select.innerHTML = '';
+                data.users.forEach(u => {
+                    tbody.innerHTML += `<tr><td>${u.username}</td><td><span class="badge bg-secondary">管理员</span></td></tr>`;
+                    select.innerHTML += `<option value="${u.id}">${u.username}</option>`;
+                });
+            }
+        }
+
+        async function loadAISettings() {
+            const resp = await fetch('index.php?api=get_settings');
+            const data = await resp.json();
+            if (data.success) {
+                document.getElementById('ai_api_url').value = data.settings.ai_api_url;
+                document.getElementById('ai_api_key').value = data.settings.ai_api_key;
+                document.getElementById('ai_model').value = data.settings.ai_model;
+            }
+        }
+
         // ========================================
         // 扫码功能
         // ========================================

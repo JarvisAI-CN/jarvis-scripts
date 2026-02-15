@@ -261,7 +261,8 @@ class TestReplyGenerator(unittest.TestCase):
         """测试长文本上下文回复"""
         long_text = "今天天气真好，我想去公园散步，你觉得怎么样？"
         result = self.generator.generate(long_text, "Bob")
-        self.assertIn("转录", result) or self.assertIn("记录", result)
+        # 验证是否包含转录或记录中的任意一个
+        self.assertTrue("转录" in result or "记录" in result, f"Result '{result}' does not contain '转录' or '记录'")
 
     def test_generate_empty_text(self):
         """测试空文本"""

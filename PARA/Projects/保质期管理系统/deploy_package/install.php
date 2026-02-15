@@ -66,10 +66,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
           `username` VARCHAR(50) NOT NULL,
           `password` VARCHAR(255) NOT NULL,
+          `role` VARCHAR(20) DEFAULT 'admin',
           `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
           PRIMARY KEY (`id`),
           UNIQUE KEY `uk_username` (`username`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+        CREATE TABLE IF NOT EXISTS `settings` (
+          `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+          `s_key` VARCHAR(100) NOT NULL,
+          `s_value` TEXT,
+          PRIMARY KEY (`id`),
+          UNIQUE KEY `uk_key` (`s_key`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+        -- 初始化默认设置
+        INSERT IGNORE INTO `settings` (`s_key`, `s_value`) VALUES 
+        ('ai_api_url', 'https://api.openai.com/v1'),
+        ('ai_api_key', ''),
+        ('ai_model', 'gpt-3.5-turbo');
         ";
         
         // 执行多条 SQL
