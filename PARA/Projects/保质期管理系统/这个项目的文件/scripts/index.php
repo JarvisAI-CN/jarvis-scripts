@@ -3,7 +3,7 @@
  * ========================================
  * 保质期管理系统 - 主页面（完整版）
  * 文件名: index.php
- * 版本: v2.1.0-alpha
+ * 版本: v2.1.1-alpha
  * 创建日期: 2026-02-15
  * ========================================
  * 功能说明：
@@ -18,7 +18,7 @@
  */
 
 // 升级配置
-define('APP_VERSION', '2.1.0-alpha');
+define('APP_VERSION', '2.1.3-alpha');
 define('UPDATE_URL', 'https://raw.githubusercontent.com/JarvisAI-CN/expiry-management-system/main/');
 
 // 启动 Session
@@ -26,6 +26,47 @@ session_start();
 
 // 引入数据库连接文件
 require_once 'db.php';
+
+// ========================================
+// 自动数据库升级逻辑 (Auto-Migration)
+// ========================================
+function autoMigrate() {
+    $conn = getDBConnection();
+    if (!$conn) return;
+
+    // 1. 检查 products 表是否有 category_id 字段
+    $res = $conn->query("SHOW COLUMNS FROM `products` LIKE 'category_id'");
+    if ($res && $res->num_rows == 0) {
+        // 分步执行：先加字段，再加索引，确保语法兼容
+        $conn->query("ALTER TABLE `products` ADD COLUMN `category_id` INT(11) UNSIGNED DEFAULT 0 AFTER `id` ");
+        $conn->query("ALTER TABLE `products` ADD INDEX(`category_id`) ");
+    }
+
+    // 2. 检查 categories 表是否存在
+    $res = $conn->query("SHOW TABLES LIKE 'categories'");
+    if ($res && $res->num_rows == 0) {
+        $conn->query("
+            CREATE TABLE `categories` (
+              `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+              `name` VARCHAR(50) NOT NULL,
+              `type` VARCHAR(20) NOT NULL,
+              `rule` TEXT,
+              `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+              PRIMARY KEY (`id`),
+              UNIQUE KEY `uk_name` (`name`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        ");
+        
+        // 初始数据
+        $conn->query("INSERT IGNORE INTO `categories` (`name`, `type`, `rule`) VALUES 
+            ('小食品', 'snack', '{\"need_buffer\":true, \"scrap_on_removal\":true}'),
+            ('物料', 'material', '{\"need_buffer\":false, \"scrap_on_removal\":false}'),
+            ('咖啡豆', 'coffee', '{\"need_buffer\":true, \"scrap_on_removal\":false, \"allow_gift\":true}')");
+    }
+}
+
+// 每次运行尝试静默升级
+autoMigrate();
 
 // ========================================
 // PHP 后端 API 处理
@@ -75,6 +116,54 @@ if (isset($_GET['api'])) {
     if ($action === 'logout') {
         session_destroy();
         echo json_encode(['success' => true, 'message' => '已成功登出']);
+        exit;
+    }
+
+    // ========================================
+    // 公开 API: 检查更新
+    // ========================================
+    if ($action === 'check_upgrade') {
+        $latest_version_url = UPDATE_URL . 'VERSION.txt';
+        $latest_version = @file_get_contents($latest_version_url);
+        
+        if ($latest_version === false) {
+            echo json_encode(['success' => false, 'message' => '无法连接到更新服务器']);
+        } else {
+            $latest_version = trim($latest_version);
+            $has_update = version_compare($latest_version, APP_VERSION, '>');
+            echo json_encode([
+                'success' => true,
+                'current' => APP_VERSION,
+                'latest' => $latest_version,
+                'has_update' => $has_update
+            ]);
+        }
+        exit;
+    }
+
+    // ========================================
+    // 公开 API: 执行升级
+    // ========================================
+    if ($action === 'execute_upgrade') {
+        $files = ['index.php', 'db.php', 'install.php', 'VERSION.txt'];
+        $errors = [];
+        
+        foreach ($files as $file) {
+            $remote_content = @file_get_contents(UPDATE_URL . $file);
+            if ($remote_content !== false) {
+                if (!@file_put_contents(__DIR__ . '/' . $file, $remote_content)) {
+                    $errors[] = "无法写入 $file";
+                }
+            } else {
+                $errors[] = "无法下载 $file";
+            }
+        }
+        
+        if (empty($errors)) {
+            echo json_encode(['success' => true, 'message' => '升级成功！正在刷新页面...']);
+        } else {
+            echo json_encode(['success' => false, 'message' => implode(", ", $errors)]);
+        }
         exit;
     }
 
@@ -175,10 +264,7 @@ if (isset($_GET['api'])) {
     if ($action === 'save_product') {
         // 只接受 POST 请求
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            echo json_encode([
-                'success' => false,
-                'message' => '请求方法错误'
-            ], JSON_UNESCAPED_UNICODE);
+            echo json_encode(['success' => false, 'message' => '请求方法错误'], JSON_UNESCAPED_UNICODE);
             exit;
         }
         
@@ -342,54 +428,6 @@ if (isset($_GET['api'])) {
         fclose($output);
         exit;
     }
-    
-    // ========================================
-    // API 5: 检查更新
-    // ========================================
-    if ($action === 'check_upgrade') {
-        $latest_version_url = UPDATE_URL . 'VERSION.txt';
-        $latest_version = @file_get_contents($latest_version_url);
-        
-        if ($latest_version === false) {
-            echo json_encode(['success' => false, 'message' => '无法连接到更新服务器']);
-        } else {
-            $latest_version = trim($latest_version);
-            $has_update = version_compare($latest_version, APP_VERSION, '>');
-            echo json_encode([
-                'success' => true,
-                'current' => APP_VERSION,
-                'latest' => $latest_version,
-                'has_update' => $has_update
-            ]);
-        }
-        exit;
-    }
-
-    // ========================================
-    // API 6: 执行升级
-    // ========================================
-    if ($action === 'execute_upgrade') {
-        $files = ['index.php', 'db.php', 'install.php'];
-        $errors = [];
-        
-        foreach ($files as $file) {
-            $remote_content = @file_get_contents(UPDATE_URL . $file);
-            if ($remote_content !== false) {
-                if (!@file_put_contents(__DIR__ . '/' . $file, $remote_content)) {
-                    $errors[] = "无法写入 $file";
-                }
-            } else {
-                $errors[] = "无法下载 $file";
-            }
-        }
-        
-        if (empty($errors)) {
-            echo json_encode(['success' => true, 'message' => '升级成功！正在刷新页面...']);
-        } else {
-            echo json_encode(['success' => false, 'message' => implode(", ", $errors)]);
-        }
-        exit;
-    }
 
     // ========================================
     // API 7: 获取用户列表
@@ -507,6 +545,18 @@ if (isset($_GET['api'])) {
     }
 
     // ========================================
+    // API 13: 获取最新日志
+    // ========================================
+    if ($action === 'get_logs') {
+        $query = "SELECT l.*, u.username FROM logs l LEFT JOIN users u ON l.user_id = u.id ORDER BY l.created_at DESC LIMIT 10";
+        $res = $conn->query($query);
+        $logs = [];
+        while($row = $res->fetch_assoc()) $logs[] = $row;
+        echo json_encode(['success' => true, 'logs' => $logs]);
+        exit;
+    }
+
+    // ========================================
     // API 14: 获取全部分类
     // ========================================
     if ($action === 'get_categories') {
@@ -551,7 +601,7 @@ if (isset($_GET['api'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>保质期管理系统 v2.0</title>
+    <title>保质期管理系统 v2.1</title>
     
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -576,35 +626,49 @@ if (isset($_GET['api'])) {
         
         * {
             box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
         }
         
         body {
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            background: #f0f2f5;
             min-height: 100vh;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            padding-bottom: 50px;
         }
         
         /* ========================================
            头部样式
            ======================================== */
         .app-header {
-            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
-            color: white;
-            padding: 20px 0;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-            margin-bottom: 20px;
+            background: #fff;
+            color: #333;
+            padding: 12px 0;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            margin-bottom: 15px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
         }
         
         .app-header h1 {
-            font-size: 1.8rem;
+            font-size: 1.2rem;
             font-weight: 700;
             margin: 0;
+            color: var(--primary-color);
         }
         
         .app-header .subtitle {
-            font-size: 0.9rem;
-            opacity: 0.9;
-            margin-top: 5px;
+            font-size: 0.75rem;
+            color: #999;
+        }
+
+        /* 版本标签 */
+        .version-tag {
+            font-size: 0.65rem;
+            padding: 2px 6px;
+            background: #eee;
+            border-radius: 4px;
+            color: #666;
         }
         
         /* ========================================
@@ -612,284 +676,197 @@ if (isset($_GET['api'])) {
            ======================================== */
         .custom-card {
             background: white;
-            border-radius: 15px;
-            padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 15px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
             border: none;
         }
         
         .custom-card .card-title {
-            font-size: 1.2rem;
+            font-size: 1rem;
             font-weight: 600;
             color: #333;
             margin-bottom: 15px;
             display: flex;
             align-items: center;
-            gap: 10px;
-        }
-        
-        .custom-card .card-title i {
-            color: var(--primary-color);
+            gap: 8px;
         }
         
         /* ========================================
-           扫码区域样式
+           扫码区域 (仿微信扫一扫)
            ======================================== */
-        #reader {
-            width: 100%;
-            border-radius: 10px;
-            overflow: hidden;
-            background: #000;
-            min-height: 250px;
-        }
-        
-        #reader video {
-            object-fit: cover;
-            border-radius: 10px;
-        }
-        
-        .scan-buttons {
-            display: flex;
-            gap: 10px;
-            margin-top: 15px;
-        }
-        
-        .scan-buttons button {
-            flex: 1;
-            height: 50px;
-            font-size: 1.1rem;
-            font-weight: 600;
-            border-radius: 10px;
-        }
-        
-        .btn-scan {
+        .scan-trigger-area {
             background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
-            border: none;
-            color: white;
-            transition: all 0.3s ease;
-        }
-        
-        .btn-scan:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-            color: white;
-        }
-        
-        /* ========================================
-           批次行样式
-           ======================================== */
-        .batch-item {
-            background: #f8f9fa;
-            border-radius: 10px;
-            padding: 15px;
-            margin-bottom: 15px;
-            border-left: 4px solid var(--primary-color);
-            transition: all 0.3s ease;
-        }
-        
-        .batch-item:hover {
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            transform: translateX(5px);
-        }
-        
-        .batch-item.expired {
-            border-left-color: var(--danger-color);
-            background: #ffeaea;
-        }
-        
-        .batch-item.warning {
-            border-left-color: var(--warning-color);
-            background: #fff9e6;
-        }
-        
-        .batch-item .form-label {
-            font-weight: 600;
-            color: #555;
-            margin-bottom: 5px;
-        }
-        
-        .batch-item .remove-batch-btn {
-            height: 38px;
-            margin-top: 0;
-        }
-        
-        /* ========================================
-           状态标签样式
-           ======================================== */
-        .status-badge {
-            display: inline-block;
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            font-weight: 600;
-        }
-        
-        .status-badge.normal {
-            background: #d4edda;
-            color: #155724;
-        }
-        
-        .status-badge.warning {
-            background: #fff3cd;
-            color: #856404;
-        }
-        
-        .status-badge.expired {
-            background: #f8d7da;
-            color: #721c24;
-        }
-        
-        /* ========================================
-           统计卡片样式
-           ======================================== */
-        .stat-card {
-            background: white;
-            border-radius: 10px;
-            padding: 15px;
+            border-radius: 12px;
+            padding: 40px 20px;
             text-align: center;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-            transition: all 0.3s ease;
+            color: white;
+            cursor: pointer;
+            transition: opacity 0.2s;
         }
-        
-        .stat-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+
+        .scan-trigger-area:active {
+            opacity: 0.8;
         }
-        
-        .stat-card .stat-value {
-            font-size: 2rem;
-            font-weight: 700;
-            color: var(--primary-color);
-        }
-        
-        .stat-card .stat-label {
-            font-size: 0.9rem;
-            color: #666;
-            margin-top: 5px;
-        }
-        
-        /* ========================================
-           提示消息样式
-           ======================================== */
-        .alert-container {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 9999;
-            min-width: 300px;
-            max-width: 400px;
-        }
-        
-        .alert-container .alert {
-            border-radius: 10px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+
+        .scan-trigger-area i {
+            font-size: 3rem;
+            display: block;
             margin-bottom: 10px;
         }
+
+        .scan-trigger-area span {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        /* 全屏扫描容器 */
+        #scanOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            z-index: 2000;
+            display: none;
+            flex-direction: column;
+        }
+
+        #reader {
+            width: 100%;
+            height: 100%;
+        }
+
+        .scan-overlay-header {
+            position: absolute;
+            top: 0;
+            width: 100%;
+            padding: 20px;
+            z-index: 2001;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: white;
+        }
+
+        .scan-hint {
+            position: absolute;
+            bottom: 150px;
+            width: 100%;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.9rem;
+            z-index: 2001;
+        }
+
+        .close-scan-btn {
+            background: rgba(0, 0, 0, 0.5);
+            border: none;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            font-size: 1.2rem;
+        }
         
         /* ========================================
-           响应式设计
+           统计与大盘
            ======================================== */
-        @media (max-width: 768px) {
-            .app-header h1 {
-                font-size: 1.5rem;
-            }
-            
-            .custom-card {
-                padding: 15px;
-            }
-            
-            .batch-item {
-                padding: 12px;
-            }
-            
-            .stat-card .stat-value {
-                font-size: 1.5rem;
-            }
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 15px;
         }
-        
-        @media (max-width: 576px) {
-            .app-header {
-                padding: 15px 0;
-            }
-            
-            .app-header h1 {
-                font-size: 1.3rem;
-            }
-            
-            .custom-card {
-                border-radius: 10px;
-                padding: 12px;
-            }
-            
-            .scan-buttons button {
-                height: 45px;
-                font-size: 1rem;
-            }
+
+        .stat-item {
+            background: white;
+            padding: 12px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .stat-item .val {
+            font-size: 1.4rem;
+            font-weight: 700;
+            display: block;
+        }
+
+        .stat-item .label {
+            font-size: 0.7rem;
+            color: #999;
+        }
+
+        .health-bar-container {
+            padding: 10px;
+            background: #fff;
+            border-radius: 10px;
+            margin-bottom: 15px;
         }
         
         /* ========================================
-           动画效果
+           表单优化
            ======================================== */
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        .form-floating > .form-control {
+            height: 55px;
+            border-radius: 8px;
+            border: 1px solid #eee;
+        }
+
+        .batch-item {
+            background: #f9f9f9;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #f0f0f0;
         }
         
-        .fade-in {
-            animation: fadeIn 0.3s ease-out;
+        .btn-lg-custom {
+            height: 50px;
+            border-radius: 25px;
+            font-weight: 600;
         }
-        
-        @keyframes pulse {
-            0%, 100% {
-                transform: scale(1);
-            }
-            50% {
-                transform: scale(1.05);
-            }
-        }
-        
-        .pulse {
-            animation: pulse 2s infinite;
-        }
+
+        /* 隐藏不必要的元素 */
+        .desktop-only { display: none; }
+        @media (min-width: 992px) { .desktop-only { display: block; } }
+
     </style>
 </head>
 <body>
-    <!-- 头部 -->
+    <!-- 全屏扫描遮罩 -->
+    <div id="scanOverlay">
+        <div class="scan-overlay-header">
+            <button class="close-scan-btn" id="stopScanBtn"><i class="bi bi-x-lg"></i></button>
+            <div class="fw-bold">扫一扫</div>
+            <div style="width: 40px;"></div>
+        </div>
+        <div id="reader"></div>
+        <div class="scan-hint">请将二维码/条形码置于框内</div>
+    </div>
+
+    <!-- 移动端头部 -->
     <div class="app-header">
         <div class="container">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
-                    <h1><i class="bi bi-box-seam"></i> 保质期管理系统</h1>
-                    <div class="subtitle">
-                        扫码录入 · 批次管理 · 临期提醒 
-                        <span class="badge bg-white text-primary ms-2" id="versionTag">v<?php echo APP_VERSION; ?></span>
-                    </div>
+                    <h1>保质期管理 <span class="version-tag">v<?php echo APP_VERSION; ?></span></h1>
+                    <div class="subtitle">让临期商品无处遁形</div>
                 </div>
-                <div class="d-flex gap-2">
-                    <?php if (isset($_SESSION['user_id'])): ?>
-                    <button class="btn btn-primary btn-sm" id="settingsBtn" data-bs-toggle="modal" data-bs-target="#settingsModal">
-                        <i class="bi bi-gear"></i> 管理中心
+                <div class="dropdown">
+                    <button class="btn btn-light btn-sm rounded-pill" type="button" data-bs-toggle="dropdown">
+                        <i class="bi bi-list"></i>
                     </button>
-                    <button class="btn btn-outline-light btn-sm" id="logoutBtn">
-                        <i class="bi bi-box-arrow-right"></i> 退出
-                    </button>
-                    <?php endif; ?>
-                    <button class="btn btn-info btn-sm text-white d-none" id="upgradeBtn">
-                        <i class="bi bi-cloud-arrow-up"></i> 发现新版本
-                    </button>
-                    <button class="btn btn-warning btn-sm" id="exportBtn">
-                        <i class="bi bi-file-earmark-spreadsheet"></i> 下载盘点表
-                    </button>
-                    <button class="btn btn-light btn-sm" id="refreshStatsBtn">
-                        <i class="bi bi-arrow-clockwise"></i> 刷新统计
-                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow border-0" style="border-radius: 12px;">
+                        <?php if (isset($_SESSION['user_id'])): ?>
+                        <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#settingsModal"><i class="bi bi-gear me-2"></i>管理中心</a></li>
+                        <li><a class="dropdown-item text-danger" href="#" id="logoutBtn"><i class="bi bi-box-arrow-right me-2"></i>退出登录</a></li>
+                        <?php endif; ?>
+                        <li><a class="dropdown-item" href="#" id="upgradeBtn"><i class="bi bi-cloud-arrow-up me-2"></i>系统升级</a></li>
+                        <li><a class="dropdown-item" href="#" id="exportBtn"><i class="bi bi-file-earmark-spreadsheet me-2"></i>导出报表</a></li>
+                    </ul>
                 </div>
             </div>
         </div>
@@ -897,11 +874,11 @@ if (isset($_GET['api'])) {
 
     <div class="container">
         <?php if (!isset($_SESSION['user_id'])): ?>
-        <!-- 登录界面 -->
+        <!-- 登录页 (保持原有逻辑) -->
         <div class="row justify-content-center">
             <div class="col-md-5">
                 <div class="custom-card fade-in text-center mt-5">
-                    <h3 class="mb-4 fw-bold text-primary">⚡ 请先登录</h3>
+                    <h3 class="mb-4 fw-bold text-primary">⚡ 身份验证</h3>
                     <form id="loginForm">
                         <div class="form-floating mb-3">
                             <input type="text" class="form-control" id="loginUser" placeholder="用户名" required>
@@ -912,193 +889,102 @@ if (isset($_GET['api'])) {
                             <label for="loginPass">密码</label>
                         </div>
                         <div class="d-grid">
-                            <button type="submit" class="btn btn-primary btn-lg">进入系统</button>
+                            <button type="submit" class="btn btn-primary btn-lg-custom">进入系统</button>
                         </div>
                     </form>
                 </div>
             </div>
         </div>
         <?php else: ?>
-        <!-- 盘点功能 (已登录可见) -->
         
-        <!-- 健康看板 -->
-        <div class="row mb-4">
-            <div class="col-md-8">
-                <div class="custom-card h-100">
-                    <div class="card-title"><i class="bi bi-shield-check"></i> 效期健康度大盘</div>
-                    <div class="progress mb-3" style="height: 30px; border-radius: 15px;">
-                        <div id="bar-expired" class="progress-bar bg-danger" role="progressbar"></div>
-                        <div id="bar-urgent" class="progress-bar bg-warning" role="progressbar"></div>
-                        <div id="bar-healthy" class="progress-bar bg-success" role="progressbar"></div>
-                    </div>
-                    <div class="row text-center small">
-                        <div class="col-4 border-end">
-                            <div class="text-danger fw-bold" id="val-expired">0</div>
-                            <div class="text-muted">已过期</div>
-                        </div>
-                        <div class="col-4 border-end">
-                            <div class="text-warning fw-bold" id="val-urgent">0</div>
-                            <div class="text-muted">7天内到期</div>
-                        </div>
-                        <div class="col-4">
-                            <div class="text-success fw-bold" id="val-healthy">0</div>
-                            <div class="text-muted">安全批次</div>
-                        </div>
-                    </div>
-                </div>
+        <!-- 健康看板 (移动端紧凑版) -->
+        <div class="health-bar-container shadow-sm mb-3">
+            <div class="d-flex justify-content-between mb-1 small px-1">
+                <span class="text-muted">效期健康度</span>
+                <span id="refreshStatsBtn" class="text-primary" style="cursor: pointer;"><i class="bi bi-arrow-clockwise"></i> 刷新</span>
             </div>
-            <div class="col-md-4">
-                <div class="custom-card h-100">
-                    <div class="card-title"><i class="bi bi-clock-history"></i> 最新操作日志</div>
-                    <div id="logContainer" class="small" style="max-height: 120px; overflow-y: auto;">
-                        <div class="text-center text-muted">加载中...</div>
-                    </div>
+            <div class="progress mb-2" style="height: 12px; border-radius: 6px; background: #eee;">
+                <div id="bar-expired" class="progress-bar bg-danger" role="progressbar"></div>
+                <div id="bar-urgent" class="progress-bar bg-warning" role="progressbar"></div>
+                <div id="bar-healthy" class="progress-bar bg-success" role="progressbar"></div>
+            </div>
+            <div class="row text-center g-0">
+                <div class="col-4 border-end">
+                    <span class="d-block fw-bold text-danger" id="val-expired">0</span>
+                    <span class="text-muted" style="font-size: 0.6rem;">已过期</span>
+                </div>
+                <div class="col-4 border-end">
+                    <span class="d-block fw-bold text-warning" id="val-urgent">0</span>
+                    <span class="text-muted" style="font-size: 0.6rem;">临期</span>
+                </div>
+                <div class="col-4">
+                    <span class="d-block fw-bold text-success" id="val-healthy">0</span>
+                    <span class="text-muted" style="font-size: 0.6rem;">健康</span>
                 </div>
             </div>
         </div>
 
-        <!-- 统计卡片 -->
-        <div class="row mb-4">
-            <div class="col-6 col-md-3 mb-3">
-                <div class="stat-card">
-                    <div class="stat-value" id="statProducts">-</div>
-                    <div class="stat-label">商品总数</div>
-                </div>
-            </div>
-            <div class="col-6 col-md-3 mb-3">
-                <div class="stat-card">
-                    <div class="stat-value" id="statBatches">-</div>
-                    <div class="stat-label">批次总数</div>
-                </div>
-            </div>
-            <div class="col-6 col-md-3 mb-3">
-                <div class="stat-card">
-                    <div class="stat-value text-warning" id="statExpirySoon">-</div>
-                    <div class="stat-label">即将过期</div>
-                </div>
-            </div>
-            <div class="col-6 col-md-3 mb-3">
-                <div class="stat-card">
-                    <div class="stat-value text-danger" id="statExpired">-</div>
-                    <div class="stat-label">已过期</div>
-                </div>
-            </div>
+        <!-- 仿微信扫码触发区 -->
+        <div class="scan-trigger-area shadow-sm mb-3" id="startScanBtn">
+            <i class="bi bi-qr-code-scan"></i>
+            <span>点此开始扫描二维码 / 条形码</span>
         </div>
 
-        <!-- 扫码区域 -->
-        <div class="custom-card">
-            <div class="card-title">
-                <i class="bi bi-qr-code-scan"></i>
-                步骤 1: 扫描条形码
-            </div>
-            <div id="reader"></div>
-            <div class="scan-buttons">
-                <button type="button" class="btn btn-scan" id="startScanBtn">
-                    <i class="bi bi-camera"></i> 启动摄像头
-                </button>
-                <button type="button" class="btn btn-outline-secondary d-none" id="stopScanBtn">
-                    <i class="bi bi-stop-circle"></i> 停止扫描
-                </button>
-            </div>
-            
-            <!-- 手动输入 -->
-            <div class="mt-3">
-                <label class="form-label text-muted small">
-                    <i class="bi bi-keyboard"></i> 或手动输入 SKU：
-                </label>
-                <div class="input-group">
-                    <input type="text" class="form-control" id="manualSku" 
-                           placeholder="输入商品SKU或条形码">
-                    <button class="btn btn-outline-primary" type="button" id="manualSearchBtn">
-                        <i class="bi bi-search"></i> 查询
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- 商品信息表单 -->
-        <div class="custom-card">
-            <div class="card-title">
-                <i class="bi bi-pencil-square"></i>
-                步骤 2: 商品信息与批次录入
-            </div>
-            
+        <!-- 商品录入表单 -->
+        <div class="custom-card shadow-sm">
             <form id="productForm">
-                <!-- SKU 输入 -->
                 <div class="row g-2 mb-3">
-                    <div class="col-8">
+                    <div class="col-12">
                         <div class="form-floating">
                             <input type="text" class="form-control" id="sku" name="sku" placeholder="SKU/条形码" required>
-                            <label for="sku"><i class="bi bi-upc-scan"></i> SKU / 条形码</label>
+                            <label for="sku">SKU / 条形码</label>
                         </div>
                     </div>
-                    <div class="col-4">
+                    <div class="col-12">
                         <div class="form-floating">
                             <select class="form-select" id="categoryId" name="categoryId">
-                                <option value="0">默认无分类</option>
+                                <option value="0">选择商品分类</option>
                             </select>
-                            <label for="categoryId"><i class="bi bi-grid"></i> 商品分类</label>
+                            <label for="categoryId">所属分类</label>
                         </div>
                     </div>
                 </div>
                 
-                <!-- 商品名称输入 -->
                 <div class="row g-2 mb-3">
                     <div class="col-8">
                         <div class="form-floating">
                             <input type="text" class="form-control" id="productName" name="productName" placeholder="商品名称" required>
-                            <label for="productName"><i class="bi bi-tag"></i> 商品名称</label>
+                            <label for="productName">商品名称</label>
                         </div>
                     </div>
                     <div class="col-4">
                         <div class="form-floating">
                             <input type="number" class="form-control" id="removalBuffer" name="removalBuffer" value="0" min="0" required>
-                            <label for="removalBuffer"><i class="bi bi-alarm"></i> 提前下架(天)</label>
+                            <label for="removalBuffer">提前下架</label>
                         </div>
                     </div>
                 </div>
                 
-                <!-- 批次列表 -->
-                <div class="mb-3">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <label class="form-label fw-bold mb-0">
-                            <i class="bi bi-layers"></i> 批次信息
-                        </label>
-                        <button type="button" class="btn btn-success btn-sm" id="addBatchBtn">
-                            <i class="bi bi-plus-circle"></i> 添加批次
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="fw-bold"><i class="bi bi-layers text-primary"></i> 批次明细</span>
+                        <button type="button" class="btn btn-success btn-sm rounded-pill" id="addBatchBtn">
+                            <i class="bi bi-plus"></i> 添加批次
                         </button>
                     </div>
-                    
-                    <div id="batchesContainer">
-                        <!-- 批次行动态添加到这里 -->
-                    </div>
+                    <div id="batchesContainer"></div>
                 </div>
                 
-                <!-- 提交按钮 -->
                 <div class="d-grid gap-2">
-                    <button type="submit" class="btn btn-primary btn-lg">
-                        <i class="bi bi-save"></i> 保存商品信息
-                    </button>
-                    <button type="button" class="btn btn-outline-secondary" id="resetFormBtn">
-                        <i class="bi bi-arrow-counterclockwise"></i> 重置表单
-                    </button>
+                    <button type="submit" class="btn btn-primary btn-lg-custom">确认录入并保存</button>
+                    <button type="button" class="btn btn-light btn-sm text-muted" id="resetFormBtn">重置清空</button>
                 </div>
             </form>
         </div>
 
-        <!-- 使用说明 -->
-        <div class="custom-card">
-            <div class="card-title">
-                <i class="bi bi-info-circle"></i>
-                使用说明
-            </div>
-            <ol class="mb-0 text-muted small">
-                <li class="mb-2">点击"启动摄像头"按钮，允许浏览器访问摄像头权限</li>
-                <li class="mb-2">将条形码/二维码对准扫描框，系统会自动识别并填充 SKU</li>
-                <li class="mb-2">如果是新商品，请手动输入商品名称</li>
-                <li class="mb-2">点击"添加批次"可录入多个批次（到期日期 + 数量）</li>
-                <li class="mb-2">点击"保存商品信息"完成数据录入</li>
-            </ol>
+        <!-- 简易说明 -->
+        <div class="text-center text-muted mt-2" style="font-size: 0.75rem;">
+            Powered by Jarvis AI · 技术安全第一位
         </div>
         <?php endif; ?>
     </div>
@@ -1334,10 +1220,10 @@ if (isset($_GET['api'])) {
                 
                 if (data.success) {
                     const stats = data.statistics;
-                    document.getElementById('statProducts').textContent = stats.total_products;
-                    document.getElementById('statBatches').textContent = stats.total_batches;
-                    document.getElementById('statExpirySoon').textContent = stats.expiry_soon;
-                    document.getElementById('statExpired').textContent = stats.expired;
+                    // 如果存在对应的 DOM 则填充
+                    if (document.getElementById('val-expired')) {
+                        document.getElementById('val-expired').textContent = stats.expired;
+                    }
                 }
             } catch (error) {
                 console.error('加载统计数据失败:', error);
@@ -1350,10 +1236,9 @@ if (isset($_GET['api'])) {
             checkUpgrade();
 
             // 如果已经登录，加载统计
-            if (document.getElementById('statProducts')) {
+            if (document.getElementById('startScanBtn')) {
                 loadStatistics();
                 refreshHealthDashboard();
-                loadLogs();
             }
             
             // 刷新统计按钮
@@ -1361,8 +1246,7 @@ if (isset($_GET['api'])) {
                 document.getElementById('refreshStatsBtn').addEventListener('click', function() {
                     loadStatistics();
                     refreshHealthDashboard();
-                    loadLogs();
-                    showAlert('面板数据已全面刷新', 'success');
+                    showAlert('数据已更新', 'success');
                 });
             }
 
@@ -1522,20 +1406,6 @@ if (isset($_GET['api'])) {
             }
         }
 
-        async function loadLogs() {
-            const resp = await fetch('index.php?api=get_logs');
-            const data = await resp.json();
-            if (data.success) {
-                const container = document.getElementById('logContainer');
-                container.innerHTML = data.logs.map(l => `
-                    <div class="mb-1 border-bottom pb-1">
-                        <span class="text-primary fw-bold">${l.username || '系统'}</span>: ${l.action}
-                        <div class="text-muted" style="font-size: 0.75rem;">${l.created_at} - ${l.details}</div>
-                    </div>
-                `).join('') || '<div class="text-center text-muted">暂无日志</div>';
-            }
-        }
-
         async function loadUserList() {
             const resp = await fetch('index.php?api=get_users');
             const data = await resp.json();
@@ -1545,7 +1415,7 @@ if (isset($_GET['api'])) {
                 tbody.innerHTML = '';
                 select.innerHTML = '';
                 data.users.forEach(u => {
-                    tbody.innerHTML += `<tr><td>${u.username}</td><td><span class="badge bg-secondary">管理员</span></td></tr>`;
+                    tbody.innerHTML += `<tr><td>${u.username}</td><td><span class="badge bg-secondary">管理</span></td></tr>`;
                     select.innerHTML += `<option value="${u.id}">${u.username}</option>`;
                 });
             }
@@ -1578,31 +1448,31 @@ if (isset($_GET['api'])) {
                 // 更新商品录入页面的下拉框
                 const select = document.getElementById('categoryId');
                 if (select) {
-                    select.innerHTML = '<option value="0">默认无分类</option>' + 
+                    select.innerHTML = '<option value="0">选择分类</option>' + 
                         data.categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
                 }
             }
         }
 
         // ========================================
-        // 扫码功能
+        // 扫码功能 (UI 优化版)
         // ========================================
         
         /**
-         * 启动摄像头扫描
+         * 启动全屏扫码
          */
-        document.getElementById('startScanBtn').addEventListener('click', async function() {
-            if (isScanning) return;
-            
-            const startBtn = document.getElementById('startScanBtn');
-            const stopBtn = document.getElementById('stopScanBtn');
+        document.getElementById('startScanBtn')?.addEventListener('click', async function() {
+            const overlay = document.getElementById('scanOverlay');
+            overlay.style.display = 'flex';
             
             try {
-                html5QrCode = new Html5Qrcode("reader");
+                if (!html5QrCode) {
+                    html5QrCode = new Html5Qrcode("reader");
+                }
                 
                 const config = {
-                    fps: 10,
-                    qrbox: { width: 250, height: 250 },
+                    fps: 15,
+                    qrbox: { width: 280, height: 200 }, // 矩形框适合条形码
                     aspectRatio: 1.0
                 };
                 
@@ -1613,32 +1483,31 @@ if (isset($_GET['api'])) {
                     onScanError
                 );
                 
-                startBtn.classList.add('d-none');
-                stopBtn.classList.remove('d-none');
                 isScanning = true;
-                
-                showAlert('摄像头已启动，请对准条形码', 'info');
                 
             } catch (err) {
                 showAlert('无法启动摄像头: ' + err, 'danger');
-                stopScanning();
+                hideScanOverlay();
             }
         });
         
         /**
-         * 停止摄像头扫描
+         * 停止并隐藏扫码
          */
-        document.getElementById('stopScanBtn').addEventListener('click', stopScanning);
+        document.getElementById('stopScanBtn')?.addEventListener('click', hideScanOverlay);
         
-        function stopScanning() {
+        function hideScanOverlay() {
+            const overlay = document.getElementById('scanOverlay');
             if (html5QrCode && isScanning) {
                 html5QrCode.stop().then(() => {
-                    document.getElementById('startScanBtn').classList.remove('d-none');
-                    document.getElementById('stopScanBtn').classList.add('d-none');
+                    overlay.style.display = 'none';
                     isScanning = false;
                 }).catch(err => {
                     console.error('停止扫描失败:', err);
+                    overlay.style.display = 'none';
                 });
+            } else {
+                overlay.style.display = 'none';
             }
         }
         
@@ -1649,23 +1518,23 @@ if (isset($_GET['api'])) {
             // 填充 SKU
             document.getElementById('sku').value = decodedText;
             
+            // 播放提示音
+            playBeep();
+            
             // 停止扫描
-            stopScanning();
+            hideScanOverlay();
             
             // 自动查询商品
             searchProduct(decodedText);
             
             showAlert(`扫码成功: ${decodedText}`, 'success');
-            
-            // 播放提示音（可选）
-            playBeep();
         }
         
         /**
          * 扫码错误回调（静默处理）
          */
         function onScanError(error) {
-            // 静默处理，避免控制台刷屏
+            // 静默处理
         }
         
         /**
@@ -1746,7 +1615,7 @@ if (isset($_GET['api'])) {
                     };
                 }
             } catch (error) {
-                console.log('检查更新失败，这可能是网络问题。');
+                console.log('检查更新失败');
             }
         }
 
@@ -1757,7 +1626,7 @@ if (isset($_GET['api'])) {
         /**
          * 手动查询按钮
          */
-        document.getElementById('manualSearchBtn').addEventListener('click', function() {
+        document.getElementById('manualSearchBtn')?.addEventListener('click', function() {
             const sku = document.getElementById('manualSku').value.trim();
             if (sku) {
                 document.getElementById('sku').value = sku;
@@ -1821,77 +1690,62 @@ if (isset($_GET['api'])) {
         /**
          * 添加批次按钮
          */
-        document.getElementById('addBatchBtn').addEventListener('click', function() {
+        document.getElementById('addBatchBtn')?.addEventListener('click', function() {
             addBatchRow();
             showAlert('已添加新批次行', 'info');
         });
         
         /**
          * 添加批次行
-         * @param {object} batchData - 批次数据 { id, expiry_date, quantity, status }
+         * @param {object} batchData - 批次数据
          */
         function addBatchRow(batchData = null) {
             const container = document.getElementById('batchesContainer');
+            if (!container) return;
+
             const batchIndex = container.children.length + 1;
-            
-            // 今天的日期作为默认值
             const today = new Date().toISOString().split('T')[0];
-            
             const expiryDate = batchData ? batchData.expiry_date : today;
             const quantity = batchData ? batchData.quantity : '';
-            
-            // 计算到期状态
             const expiryStatus = batchData ? getExpiryStatus(expiryDate) : getExpiryStatus(today);
             const statusClass = batchData ? expiryStatus.class : '';
-            const statusText = batchData ? expiryStatus.text : '新批次';
+            const statusText = batchData ? (batchData.ai_status || expiryStatus.text) : '新批次';
             
             const batchHtml = `
                 <div class="batch-item ${statusClass} fade-in" data-batch-id="${batchData ? batchData.id : ''}">
                     <div class="row g-2">
-                        <div class="col-12 col-md-6">
-                            <label class="form-label small">
-                                <i class="bi bi-calendar-event"></i> 到期时间
-                            </label>
-                            <input type="date" class="form-control expiry-date-input" 
-                                   value="${expiryDate}" required>
+                        <div class="col-6">
+                            <label class="form-label small text-muted">到期时间</label>
+                            <input type="date" class="form-control expiry-date-input" value="${expiryDate}" required>
                         </div>
-                        <div class="col-12 col-md-4">
-                            <label class="form-label small">
-                                <i class="bi bi-box"></i> 数量
-                            </label>
-                            <input type="number" class="form-control quantity-input" 
-                                   value="${quantity}" min="0" placeholder="0" required>
+                        <div class="col-4">
+                            <label class="form-label small text-muted">数量</label>
+                            <input type="number" class="form-control quantity-input" value="${quantity}" min="0" placeholder="0" required>
                         </div>
-                        <div class="col-12 col-md-2">
+                        <div class="col-2">
                             <label class="form-label small">&nbsp;</label>
-                            <button type="button" class="btn btn-danger w-100 remove-batch-btn">
+                            <button type="button" class="btn btn-outline-danger w-100 remove-batch-btn border-0">
                                 <i class="bi bi-trash"></i>
                             </button>
                         </div>
                     </div>
-                    ${batchData ? `
-                    <div class="mt-2 small text-muted">
+                    <div class="mt-2 small d-flex justify-content-between">
                         <span class="status-badge ${expiryStatus.badgeClass}">${statusText}</span>
                     </div>
-                    ` : ''}
                 </div>
             `;
             
             container.insertAdjacentHTML('beforeend', batchHtml);
             
-            // 绑定删除按钮事件
             const newBatch = container.lastElementChild;
-            const removeBtn = newBatch.querySelector('.remove-batch-btn');
-            removeBtn.addEventListener('click', function() {
+            newBatch.querySelector('.remove-batch-btn').addEventListener('click', function() {
                 if (container.children.length > 1) {
                     newBatch.remove();
-                    showAlert('批次已删除', 'info');
                 } else {
                     showAlert('至少保留一个批次', 'warning');
                 }
             });
             
-            // 绑定日期变更事件（更新状态显示）
             const dateInput = newBatch.querySelector('.expiry-date-input');
             dateInput.addEventListener('change', function() {
                 updateBatchStatus(newBatch, this.value);
@@ -1900,44 +1754,29 @@ if (isset($_GET['api'])) {
         
         /**
          * 更新批次状态显示
-         * @param {HTMLElement} batchElement - 批次行元素
-         * @param {string} expiryDate - 到期日期
          */
         function updateBatchStatus(batchElement, expiryDate) {
             const status = getExpiryStatus(expiryDate);
-            
-            // 移除旧的状态类
             batchElement.classList.remove('expired', 'warning');
+            if (status.class) batchElement.classList.add(status.class);
             
-            // 添加新的状态类
-            if (status.class) {
-                batchElement.classList.add(status.class);
+            let statusBadge = batchElement.querySelector('.status-badge');
+            if (statusBadge) {
+                statusBadge.className = `status-badge ${status.badgeClass}`;
+                statusBadge.textContent = status.text;
             }
-            
-            // 更新或添加状态标签
-            let statusDiv = batchElement.querySelector('.mt-2.small.text-muted');
-            if (!statusDiv) {
-                statusDiv = document.createElement('div');
-                statusDiv.className = 'mt-2 small text-muted';
-                batchElement.appendChild(statusDiv);
-            }
-            
-            statusDiv.innerHTML = `<span class="status-badge ${status.badgeClass}">${status.text}</span>`;
         }
         
         /**
          * 显示批次列表
-         * @param {array} batches - 批次数组
          */
         function displayBatches(batches) {
             const container = document.getElementById('batchesContainer');
+            if (!container) return;
             container.innerHTML = '';
             
             if (batches && batches.length > 0) {
-                batches.forEach(batch => {
-                    addBatchRow(batch);
-                });
-                showAlert(`已加载 ${batches.length} 个批次`, 'info');
+                batches.forEach(batch => addBatchRow(batch));
             } else {
                 addBatchRow();
             }
@@ -1947,7 +1786,8 @@ if (isset($_GET['api'])) {
          * 清空批次列表
          */
         function clearBatches() {
-            document.getElementById('batchesContainer').innerHTML = '';
+            const container = document.getElementById('batchesContainer');
+            if (container) container.innerHTML = '';
         }
         
         // ========================================
@@ -1957,26 +1797,20 @@ if (isset($_GET['api'])) {
         /**
          * 表单提交事件
          */
-        document.getElementById('productForm').addEventListener('submit', async function(e) {
+        document.getElementById('productForm')?.addEventListener('submit', async function(e) {
             e.preventDefault();
             
             const sku = document.getElementById('sku').value.trim();
             const name = document.getElementById('productName').value.trim();
+            const category_id = document.getElementById('categoryId').value;
             const removal_buffer = parseInt(document.getElementById('removalBuffer').value) || 0;
             
-            // 收集批次数据
             const batches = [];
-            const batchItems = document.querySelectorAll('.batch-item');
-            
-            batchItems.forEach(item => {
+            document.querySelectorAll('.batch-item').forEach(item => {
                 const expiryDate = item.querySelector('.expiry-date-input').value;
                 const quantity = parseInt(item.querySelector('.quantity-input').value) || 0;
-                
                 if (expiryDate && quantity >= 0) {
-                    batches.push({
-                        expiry_date: expiryDate,
-                        quantity: quantity
-                    });
+                    batches.push({ expiry_date: expiryDate, quantity: quantity });
                 }
             });
             
@@ -1985,105 +1819,51 @@ if (isset($_GET['api'])) {
                 return;
             }
             
-            // 禁用提交按钮
             const submitBtn = this.querySelector('button[type="submit"]');
-            const originalText = submitBtn.innerHTML;
             submitBtn.disabled = true;
-            submitBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> 保存中...';
             
             try {
                 const response = await fetch('index.php?api=save_product', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        sku: sku,
-                        name: name,
-                        removal_buffer: removal_buffer,
-                        batches: batches
+                        sku, name, category_id, removal_buffer, batches
                     })
                 });
                 
                 const data = await response.json();
-                
                 if (data.success) {
-                    showAlert(`保存成功！新增 ${data.batches_added} 个批次`, 'success');
-                    
-                    // 刷新统计数据
+                    showAlert('保存成功', 'success');
                     loadStatistics();
-                    
-                    // 重新查询商品（显示更新后的批次）
+                    refreshHealthDashboard();
                     searchProduct(sku);
                 } else {
-                    showAlert(data.message || '保存失败', 'danger');
+                    showAlert(data.message, 'danger');
                 }
             } catch (error) {
-                showAlert('网络错误: ' + error.message, 'danger');
+                showAlert('网络错误', 'danger');
             } finally {
-                // 恢复提交按钮
                 submitBtn.disabled = false;
-                submitBtn.innerHTML = originalText;
             }
         });
         
-        // ========================================
-        // 重置表单功能
-        // ========================================
-        
         /**
-         * 重置表单按钮
+         * 重置表单
          */
-        document.getElementById('resetFormBtn').addEventListener('click', function() {
+        document.getElementById('resetFormBtn')?.addEventListener('click', function() {
             document.getElementById('productForm').reset();
             clearBatches();
             addBatchRow();
-            showAlert('表单已重置', 'info');
         });
-        
-        // ========================================
-        // 页面初始化
-        // ========================================
-        
-        document.addEventListener('DOMContentLoaded', function() {
-            // 检查版本更新
-            checkUpgrade();
 
-            // 默认添加一个批次行
-            addBatchRow();
-            
-            // SKU 输入框回车查询
-            document.getElementById('sku').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    searchProduct();
-                }
+        // 监听提前下架天数变化
+        document.getElementById('removalBuffer')?.addEventListener('input', function() {
+            document.querySelectorAll('.batch-item').forEach(item => {
+                const dateInput = item.querySelector('.expiry-date-input');
+                if (dateInput && dateInput.value) updateBatchStatus(item, dateInput.value);
             });
-            
-            // 手动 SKU 输入框回车查询
-            document.getElementById('manualSku').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    document.getElementById('manualSearchBtn').click();
-                }
-            });
-
-            // 监听提前下架天数变化，实时更新批次状态
-            document.getElementById('removalBuffer')?.addEventListener('input', function() {
-                const batchItems = document.querySelectorAll('.batch-item');
-                batchItems.forEach(item => {
-                    const dateInput = item.querySelector('.expiry-date-input');
-                    if (dateInput && dateInput.value) {
-                        updateBatchStatus(item, dateInput.value);
-                    }
-                });
-            });
-            
-            // 欢迎提示
-            setTimeout(() => {
-                showAlert('欢迎使用保质期管理系统！点击"启动摄像头"开始扫码录入。', 'info');
-            }, 500);
         });
+
     </script>
 </body>
 </html>

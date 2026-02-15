@@ -35,115 +35,124 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($conn->connect_error) {
         $error = "数据库连接失败: " . $conn->connect_error;
     } else {
-        // 2. 创建数据库
-        $conn->query("CREATE DATABASE IF NOT EXISTS `$db_name` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
-        $conn->select_db($db_name);
-        
-        // 3. 创建表结构
-        $sql = "
-        CREATE TABLE IF NOT EXISTS `products` (
-          `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
-          `category_id` INT(11) UNSIGNED DEFAULT 0,
-          `sku` VARCHAR(100) NOT NULL,
-          `name` VARCHAR(200) NOT NULL,
-          `removal_buffer` INT(5) UNSIGNED DEFAULT 0,
-          `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
-          `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-          PRIMARY KEY (`id`),
-          UNIQUE KEY `uk_sku` (`sku`)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-        CREATE TABLE IF NOT EXISTS `categories` (
-          `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
-          `name` VARCHAR(50) NOT NULL,
-          `type` VARCHAR(20) NOT NULL,
-          `rule` TEXT,
-          `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
-          PRIMARY KEY (`id`),
-          UNIQUE KEY `uk_name` (`name`)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-        INSERT IGNORE INTO `categories` (`name`, `type`, `rule`) VALUES 
-        ('小食品', 'snack', '{\"need_buffer\":true, \"scrap_on_removal\":true}'),
-        ('物料', 'material', '{\"need_buffer\":false, \"scrap_on_removal\":false}'),
-        ('咖啡豆', 'coffee', '{\"need_buffer\":true, \"scrap_on_removal\":false, \"allow_gift\":true}');
-
-        CREATE TABLE IF NOT EXISTS `batches` (
-          `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
-          `product_id` INT(11) UNSIGNED NOT NULL,
-          `expiry_date` DATE NOT NULL,
-          `quantity` INT(11) UNSIGNED NOT NULL DEFAULT 0,
-          `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
-          `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-          PRIMARY KEY (`id`),
-          CONSTRAINT `fk_batches_products` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-        CREATE TABLE IF NOT EXISTS `users` (
-          `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
-          `username` VARCHAR(50) NOT NULL,
-          `password` VARCHAR(255) NOT NULL,
-          `role` VARCHAR(20) DEFAULT 'admin',
-          `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
-          PRIMARY KEY (`id`),
-          UNIQUE KEY `uk_username` (`username`)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-        CREATE TABLE IF NOT EXISTS `settings` (
-          `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
-          `s_key` VARCHAR(100) NOT NULL,
-          `s_value` TEXT,
-          PRIMARY KEY (`id`),
-          UNIQUE KEY `uk_key` (`s_key`)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-        CREATE TABLE IF NOT EXISTS `logs` (
-          `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
-          `user_id` INT(11) UNSIGNED,
-          `action` VARCHAR(100),
-          `details` TEXT,
-          `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
-          PRIMARY KEY (`id`)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-        -- 初始化默认设置
-        INSERT IGNORE INTO `settings` (`s_key`, `s_value`) VALUES 
-        ('ai_api_url', 'https://api.openai.com/v1'),
-        ('ai_api_key', ''),
-        ('ai_model', 'gpt-4o'),
-        ('alert_email', ''),
-        ('alert_days', '3,7,15');
-        ";
-        
-        // 执行多条 SQL
-        if ($conn->multi_query($sql)) {
-            do {
-                if ($result = $conn->store_result()) { $result->free(); }
-            } while ($conn->next_result());
-            
-            // 4. 创建管理员账号
-            $hashed_pass = password_hash($admin_pass, PASSWORD_DEFAULT);
-            $stmt = $conn->prepare("INSERT INTO users (username, password) VALUES (?, ?) ON DUPLICATE KEY UPDATE password = VALUES(password)");
-            $stmt->bind_param("ss", $admin_user, $hashed_pass);
-            $stmt->execute();
-            
-            // 5. 写入配置文件
-            $configContent = "<?php\n"
-                           . "define('DB_HOST', '$db_host');\n"
-                           . "define('DB_USER', '$db_user');\n"
-                           . "define('DB_PASS', '$db_pass');\n"
-                           . "define('DB_NAME', '$db_name');\n"
-                           . "define('DB_CHARSET', 'utf8mb4');\n";
-            
-            if (file_put_contents($configFile, $configContent)) {
-                // 6. 创建锁文件
-                file_put_contents($lockFile, date('Y-m-d H:i:s'));
-                $success = true;
+        // 2. 尝试选择数据库，如果不存在则尝试创建
+        if (!$conn->select_db($db_name)) {
+            // 尝试创建数据库
+            $create_sql = "CREATE DATABASE IF NOT EXISTS `$db_name` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci";
+            if (!$conn->query($create_sql)) {
+                $error = "无法创建或访问数据库 '$db_name'。请确保该用户有权限，或者您已在面板中手动创建了该名称的数据库。";
             } else {
-                $error = "无法写入 config.php，请检查目录权限。";
+                $conn->select_db($db_name);
             }
-        } else {
-            $error = "表结构创建失败: " . $conn->error;
+        }
+
+        if (!$error) {
+            // 3. 创建表结构
+            $sql = "
+            CREATE TABLE IF NOT EXISTS `categories` (
+              `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+              `name` VARCHAR(50) NOT NULL,
+              `type` VARCHAR(20) NOT NULL,
+              `rule` TEXT,
+              `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+              PRIMARY KEY (`id`),
+              UNIQUE KEY `uk_name` (`name`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+            INSERT IGNORE INTO `categories` (`name`, `type`, `rule`) VALUES 
+            ('小食品', 'snack', '{\"need_buffer\":true, \"scrap_on_removal\":true}'),
+            ('物料', 'material', '{\"need_buffer\":false, \"scrap_on_removal\":false}'),
+            ('咖啡豆', 'coffee', '{\"need_buffer\":true, \"scrap_on_removal\":false, \"allow_gift\":true}');
+
+            CREATE TABLE IF NOT EXISTS `products` (
+              `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+              `category_id` INT(11) UNSIGNED DEFAULT 0,
+              `sku` VARCHAR(100) NOT NULL,
+              `name` VARCHAR(200) NOT NULL,
+              `removal_buffer` INT(5) UNSIGNED DEFAULT 0,
+              `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+              `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+              PRIMARY KEY (`id`),
+              UNIQUE KEY `uk_sku` (`sku`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+            CREATE TABLE IF NOT EXISTS `batches` (
+              `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+              `product_id` INT(11) UNSIGNED NOT NULL,
+              `expiry_date` DATE NOT NULL,
+              `quantity` INT(11) UNSIGNED NOT NULL DEFAULT 0,
+              `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+              `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+              PRIMARY KEY (`id`),
+              CONSTRAINT `fk_batches_products` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+            CREATE TABLE IF NOT EXISTS `users` (
+              `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+              `username` VARCHAR(50) NOT NULL,
+              `password` VARCHAR(255) NOT NULL,
+              `role` VARCHAR(20) DEFAULT 'admin',
+              `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+              PRIMARY KEY (`id`),
+              UNIQUE KEY `uk_username` (`username`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+            CREATE TABLE IF NOT EXISTS `settings` (
+              `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+              `s_key` VARCHAR(100) NOT NULL,
+              `s_value` TEXT,
+              PRIMARY KEY (`id`),
+              UNIQUE KEY `uk_key` (`s_key`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+            CREATE TABLE IF NOT EXISTS `logs` (
+              `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+              `user_id` INT(11) UNSIGNED,
+              `action` VARCHAR(100),
+              `details` TEXT,
+              `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+              PRIMARY KEY (`id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+            -- 初始化默认设置
+            INSERT IGNORE INTO `settings` (`s_key`, `s_value`) VALUES 
+            ('ai_api_url', 'https://api.openai.com/v1'),
+            ('ai_api_key', ''),
+            ('ai_model', 'gpt-4o'),
+            ('alert_email', ''),
+            ('alert_days', '3,7,15');
+            ";
+            
+            // 执行多条 SQL
+            if ($conn->multi_query($sql)) {
+                do {
+                    if ($result = $conn->store_result()) { $result->free(); }
+                } while ($conn->next_result());
+                
+                // 4. 创建管理员账号
+                $hashed_pass = password_hash($admin_pass, PASSWORD_DEFAULT);
+                $stmt = $conn->prepare("INSERT INTO users (username, password) VALUES (?, ?) ON DUPLICATE KEY UPDATE password = VALUES(password)");
+                $stmt->bind_param("ss", $admin_user, $hashed_pass);
+                $stmt->execute();
+                
+                // 5. 写入配置文件
+                $configContent = "<?php\n"
+                               . "define('DB_HOST', '$db_host');\n"
+                               . "define('DB_USER', '$db_user');\n"
+                               . "define('DB_PASS', '$db_pass');\n"
+                               . "define('DB_NAME', '$db_name');\n"
+                               . "define('DB_CHARSET', 'utf8mb4');\n";
+                
+                if (file_put_contents($configFile, $configContent)) {
+                    // 6. 创建锁文件
+                    file_put_contents($lockFile, date('Y-m-d H:i:s'));
+                    $success = true;
+                } else {
+                    $error = "无法写入 config.php，请检查目录权限。";
+                }
+            } else {
+                $error = "表结构创建失败: " . $conn->error;
+            }
         }
         $conn->close();
     }
