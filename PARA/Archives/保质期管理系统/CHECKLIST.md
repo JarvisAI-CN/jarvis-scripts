@@ -1,35 +1,226 @@
-# 版本发布强制检查单 (Audit Checklist) - v1.0
+# 保质期管理系统 - 部署检查清单
 
-> **项目**: 保质期管理系统
-> **准则**: 任何 Release 版本发布前，必须逐项核对并勾选。
+## ✅ 部署前检查
+
+- [ ] PHP 版本 >= 7.4
+- [ ] MySQL 版本 >= 5.7
+- [ ] Web 服务器（Nginx/Apache）
+- [ ] 浏览器支持摄像头访问（推荐 Chrome/Safari）
+
+---
+
+## 📋 部署步骤
+
+### 1. 数据库配置
+```bash
+# 1.1 导入数据库
+mysql -u root -p < database.sql
+
+# 1.2 验证数据库创建
+mysql -u root -p
+> USE expiry_system;
+> SHOW TABLES;
+> EXIT;
+```
+
+### 2. 修改数据库连接
+编辑 `db.php` 文件：
+```php
+define('DB_HOST', 'localhost');
+define('DB_USER', 'root');          // 修改为你的数据库用户名
+define('DB_PASS', 'your_password'); // 修改为你的数据库密码
+define('DB_NAME', 'expiry_system');
+```
+
+### 3. 上传文件到服务器
+```
+目标目录示例：
+- 宝塔面板: /www/wwwroot/your-domain.com/
+- Apache: /var/www/html/expiry_system/
+- Nginx: /var/www/html/expiry_system/
+```
+
+需要上传的文件：
+- [ ] db.php
+- [ ] index.php
+
+### 4. 设置文件权限
+```bash
+chmod 644 db.php index.php
+chown www-data:www-data db.php index.php  # 根据服务器配置调整
+```
+
+### 5. 访问测试
+```
+URL: http://your-domain.com/index.php
+```
 
 ---
 
-## 1. 核心链路测试 (Core Flow)
-- [ ] **登录验证**: 账号密码登录、Session 持久化、登出逻辑。
-- [ ] **扫码闭环**: 扫码识别 -> 自动填充 -> 字段锁定 (老商品) -> 批次录入。
-- [ ] **暂存队列**: 批量添加商品至待提交清单，队列计数准确。
-- [ ] **一键提交**: 批量写入数据库，且 AI 自动按日期完成排序。
-- [ ] **历史查看**: 能看到历史盘点单，详情页排序正确。
+## 🧪 功能测试清单
 
-## 2. 数据库与迁移 (Database)
-- [ ] **静默升级**: 检查 `autoMigrate()` 函数是否包含新增字段的 `ALTER TABLE` 逻辑。
-- [ ] **兼容性检查**: SQL 语法是否分步执行 (避免 `ADD COLUMN ... INDEX` 连写导致的语法错误)。
-- [ ] **初始化引导**: `install.php` 在干净环境下能成功创建库表并设置管理员。
+### 扫码测试
+- [ ] 点击"启动摄像头扫描"按钮
+- [ ] 允许浏览器访问摄像头权限
+- [ ] 扫描条形码/二维码成功
+- [ ] SKU 自动填充到输入框
 
-## 3. 资源与网络 (Assets & Network)
-- [ ] **CDN 连通性**: 检查 `bootstrap`, `bi-icons`, `html5-qrcode` 在国内移动端的加载速度。
-- [ ] **本地回退**: 验证 `execute_upgrade` 是否具备 GitHub 失败自动切换公网 IP 节点的逻辑。
-- [ ] **IP 脱敏**: 检查代码中是否误包含 `10.7.0.5` (内网) 这种无法公网访问的地址。
+### 新商品测试
+- [ ] 输入新的 SKU（如：TEST001）
+- [ ] 系统提示"新商品，请输入商品名称"
+- [ ] 输入商品名称
+- [ ] 添加批次（到期日期 + 数量）
+- [ ] 点击保存，成功提示
+- [ ] 数据正确写入数据库
 
-## 4. UI/UX 移动端适配 (Mobile)
-- [ ] **全屏扫码**: 检查遮罩层显示是否正常，关闭按钮是否会被刘海屏遮挡。
-- [ ] **点击区域**: 下拉框、删除图标等小元素的点击热区是否足够大。
-- [ ] **反馈音效**: 扫码成功后的“叮”声在静音模式外是否正常播放。
+### 旧商品测试
+- [ ] 输入已有 SKU（或扫描已录入商品）
+- [ ] 系统自动填充商品名称
+- [ ] 显示已有批次列表
+- [ ] 批次状态正确（临期/过期标记）
+- [ ] 添加新批次并保存
 
-## 5. 安全性审计 (Security)
-- [ ] **权限隔离**: 验证未登录状态下 API 接口返回 `Session Expired`。
-- [ ] **管理后台**: `admin.php` 的修改权限是否严格限制在管理员 Session 内。
+### 多批次测试
+- [ ] 点击"+ 添加更多批次"按钮
+- [ ] 新批次行正确显示
+- [ ] 可以删除多余批次行
+- [ ] 多个批次同时保存成功
+
+### 移动端测试
+- [ ] 使用手机浏览器访问
+- [ ] 页面响应式布局正常
+- [ ] 摄像头调用正常
+- [ ] 触摸操作流畅
 
 ---
-**检查未通过禁止发布！** ⚡
+
+## 🔍 常见问题排查
+
+### 问题 1: 扫码功能无法使用
+**检查项**：
+- [ ] 是否使用 HTTPS（本地 localhost 除外）
+- [ ] 浏览器是否允许摄像头权限
+- [ ] 尝试更换浏览器（Chrome/Safari）
+- [ ] 检查浏览器控制台是否有错误
+
+### 问题 2: 数据库连接失败
+**检查项**：
+- [ ] MySQL 服务是否运行
+- [ ] `db.php` 配置是否正确
+- [ ] 数据库用户是否有权限
+- [ ] 数据库 `expiry_system` 是否存在
+
+### 问题 3: 保存失败
+**检查项**：
+- [ ] SKU 和商品名称是否为空
+- [ ] 是否至少添加一个批次
+- [ ] 批次日期和数量是否有效
+- [ ] 检查 PHP 错误日志
+
+---
+
+## 📊 验证数据库数据
+
+```sql
+-- 查看所有商品
+SELECT * FROM products;
+
+-- 查看所有批次
+SELECT * FROM batches;
+
+-- 查看商品及其批次（关联查询）
+SELECT 
+    p.sku, 
+    p.name, 
+    b.expiry_date, 
+    b.quantity,
+    DATEDIFF(b.expiry_date, CURDATE()) as days_to_expiry
+FROM products p
+LEFT JOIN batches b ON p.id = b.product_id
+ORDER BY p.id, b.expiry_date;
+
+-- 查找即将过期的商品（30天内）
+SELECT 
+    p.sku, 
+    p.name, 
+    b.expiry_date, 
+    b.quantity,
+    DATEDIFF(b.expiry_date, CURDATE()) as days_to_expiry
+FROM products p
+JOIN batches b ON p.id = b.product_id
+WHERE b.expiry_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY)
+ORDER BY b.expiry_date;
+
+-- 查找已过期的商品
+SELECT 
+    p.sku, 
+    p.name, 
+    b.expiry_date, 
+    b.quantity
+FROM products p
+JOIN batches b ON p.id = b.product_id
+WHERE b.expiry_date < CURDATE()
+ORDER BY b.expiry_date;
+```
+
+---
+
+## 🔒 安全检查
+
+### 生产环境部署前
+- [ ] 修改 `db.php` 中数据库密码
+- [ ] 关闭 PHP 错误显示（修改 `error_reporting`）
+- [ ] 启用 HTTPS 证书
+- [ ] 配置访问控制（可选）
+- [ ] 定期备份数据库
+
+### 备份脚本示例
+```bash
+#!/bin/bash
+# backup.sh - 数据库备份脚本
+BACKUP_DIR="/path/to/backup"
+DATE=$(date +%Y%m%d_%H%M%S)
+mysqldump -u root -p expiry_system > $BACKUP_DIR/expiry_$DATE.sql
+find $BACKUP_DIR -name "expiry_*.sql" -mtime +30 -delete
+```
+
+---
+
+## 📱 浏览器兼容性
+
+| 浏览器 | 版本 | 扫码支持 | 移动端 |
+|--------|------|---------|--------|
+| Chrome | 90+ | ✅ | ✅ |
+| Safari | 14+ | ✅ | ✅ |
+| Firefox | 80+ | ✅ | ⚠️ |
+| Edge | 90+ | ✅ | ⚠️ |
+| 微信内置浏览器 | - | ❌ | ❌ |
+
+---
+
+## 📞 快速命令参考
+
+```bash
+# 检查 PHP 版本
+php -v
+
+# 检查 MySQL 服务状态
+sudo systemctl status mysql
+
+# 重启 Nginx
+sudo systemctl restart nginx
+
+# 查看 PHP 错误日志
+tail -f /var/log/php/error.log
+
+# 查看 Nginx 错误日志
+tail -f /var/log/nginx/error.log
+```
+
+---
+
+**部署日期**: ___________  
+**部署人**: ___________  
+**测试状态**: ⬜ 通过 / ⬜ 失败
+
+**备注**: ____________________________________________________
