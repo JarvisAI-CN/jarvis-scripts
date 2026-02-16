@@ -1,0 +1,80 @@
+{
+  "suite_name": "VerificationSuite",
+  "total": 2,
+  "passed": 2,
+  "failed": 0,
+  "skipped": 0,
+  "errors": 0,
+  "duration": 0.0,
+  "success_rate": 100.0,
+  "start_time": "2026-02-16T01:04:32.929911",
+  "end_time": "2026-02-16T01:04:32.930369",
+  "test_cases": [
+    {
+      "name": "test_add",
+      "status": "passed",
+      "duration": 0.0,
+      "error_message": null,
+      "error_trace": null,
+      "steps": [
+        {
+          "name": "setup",
+          "status": "passed",
+          "duration": 0.0,
+          "error": null,
+          "timestamp": "2026-02-16T01:04:32.929962"
+        },
+        {
+          "name": "run_test",
+          "status": "passed",
+          "duration": 0.0,
+          "error": null,
+          "timestamp": "2026-02-16T01:04:32.930007"
+        },
+        {
+          "name": "teardown",
+          "status": "passed",
+          "duration": 0.0,
+          "error": null,
+          "timestamp": "2026-02-16T01:04:32.930014"
+        }
+      ],
+      "metadata": {}
+    },
+    {
+      "name": "test_response_time",
+      "status": "passed",
+      "duration": 0.0,
+      "error_message": null,
+      "error_trace": null,
+      "steps": [
+        {
+          "name": "setup",
+          "status": "passed",
+          "duration": 0.0,
+          "error": null,
+          "timestamp": "2026-02-16T01:04:32.930089"
+        },
+        {
+          "name": "run_test",
+          "status": "passed",
+          "duration": 0.0,
+          "error": null,
+          "timestamp": "2026-02-16T01:04:32.930309"
+        },
+        {
+          "name": "teardown",
+          "status": "passed",
+          "duration": 0.0,
+          "error": null,
+          "timestamp": "2026-02-16T01:04:32.930316"
+        }
+      ],
+      "metadata": {
+        "avg_duration": 2.5431315104166665e-06,
+        "max_duration": 3.0994415283203125e-06,
+        "iterations": 3
+      }
+    }
+  ]
+}
