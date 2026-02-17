@@ -55,8 +55,18 @@ echo "https://webdav.123pan.cn/webdav /home/ubuntu/123pan davfs _netdev,noatime"
 
 ## 相关链接
 
-- [[123盘自动备份系统]] - 应用项目
-- [[Linux文件系统管理]]
+**项目应用**:
+- [[PARA/Archives/123盘自动备份系统/备份频率调查报告]] - 备份频率研究
+- [[PARA/Archives/123盘自动备份系统/备份问题分析-20260206]] - 问题分析
+
+**知识关联**:
+- [[TOOLS.md]] - 123盘WebDAV配置
+- [[MEMORY.md]] - 备份与恢复经验
+- [[HEARTBEAT.md]] - 自动备份任务
+
+**外部资源**:
+- [davfs2官方文档](http://savannah.nongnu.org/projects/davfs2/)
+- [WebDAV RFC 4918](https://tools.ietf.org/html/rfc4918/)
 
 ---
 

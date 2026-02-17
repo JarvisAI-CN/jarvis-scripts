@@ -1,7 +1,8 @@
 # OpenClaw文档学习笔记 - 2026-02-06
 
-**学习时间**: 2026-02-06 10:22 GMT+8 (最后更新: 2026-02-06 21:43 GMT+8)
+**学习时间**: 2026-02-06 10:22 GMT+8 (最后更新: 2026-02-18 02:00 GMT+8)
 **学习内容**: OpenClaw功能和最佳实践
+**今日学习**: Cron Jobs、Auth Monitoring、Feishu集成
 
 ---
 
@@ -251,3 +252,100 @@ OpenClaw是一个强大的消息网关和自动化平台，核心优势：
 **学习完成**: ✅ OpenClaw文档学习
 **记录位置**: PARA/Resources/OpenClaw使用技巧.md
 **下一步**: 应用到实际工作中
+
+---
+
+## 📚 2026-02-18 更新 - 凌晨自主学习
+
+### Cron Jobs深度理解
+**来源**: https://docs.openclaw.ai/automation/cron-jobs.md
+
+**两种执行模式**:
+1. **Main session** (`sessionTarget: "main"`):
+   - 在下一次心跳时运行
+   - 有主会话上下文
+   - 必须使用 `payload.kind = "systemEvent"`
+   - 适合需要上下文的任务
+
+2. **Isolated** (`sessionTarget: "isolated"`):
+   - 在独立的 `cron:<jobId>` 会话中运行
+   - 每次运行都是新会话ID
+   - 使用 `payload.kind = "agentTurn"`
+   - 默认会发送摘要到主会话
+   - 适合频繁/后台任务
+
+**Delivery模式**:
+- `announce`: 发送摘要到目标频道
+- `webhook`: POST到指定URL
+- `none`: 仅内部，不发送
+
+**Wake模式**:
+- `now`: 立即触发心跳
+- `next-heartbeat`: 等待下次心跳
+
+**关键发现**:
+- Cron任务持久化在 `~/.openclaw/cron/jobs.json`
+- One-shot任务默认完成后自动删除
+- 可以使用 `openclaw cron list/runs` 监控
+
+**相关链接**: [[HEARTBEAT.md]] | [[PARA/Resources/API额度管理]]
+
+---
+
+### Auth Monitoring
+**来源**: https://docs.openclaw.ai/automation/auth-monitoring.md
+
+**推荐方法**:
+```bash
+openclaw models status --check
+```
+
+**Exit codes**:
+- `0`: OK
+- `1`: expired or missing credentials
+- `2`: expiring soon (within 24h)
+
+**集成方式**:
+- 可用于cron/systemd自动化
+- JSON输出：`openclaw models status --json`
+- 检查OAuth状态和API密钥
+
+**当前应用**: `api_health_monitor_v2.py` 使用的正是这个方法 ✅
+
+**相关链接**: [[MEMORY.md]] (系统升级) | [[AGENTS.md]] (AI协作)
+
+---
+
+### Feishu集成
+**来源**: https://docs.openclaw.ai/channels/feishu.md
+
+**核心特性**:
+- WebSocket事件订阅（无需暴露公网URL）
+- 支持消息收发
+- 支持文件读写（aily:file:read/write）
+- 支持聊天成员访问（im:chat.members:bot_access）
+
+**权限配置**:
+必须包含：
+- `im:message` - 发送消息
+- `im:message:send_as_bot` - 以bot身份发送
+- `aily:file:read` / `aily:file:write` - 文件操作
+
+**当前状态**: ✅ 飞书是主人的主要通信渠道
+
+**相关链接**: [[MEMORY.md]] (2026-02-11 启用飞书) | [[TOOLS.md]] (配置信息)
+
+---
+
+## 🔗 知识网络扩展
+
+今天的学习强化了以下链接：
+- OpenClaw使用技巧 ← → HEARTBEAT.md（Cron集成）
+- OpenClaw使用技巧 ← → API额度管理（任务调度）
+- OpenClaw使用技巧 ← → MEMORY.md（系统升级）
+- OpenClaw使用技巧 ← → AGENTS.md（AI协作）
+
+**下一步优化**:
+- [ ] 使用OpenClaw Cron替换部分系统crontab任务
+- [ ] 利用Isolated会话执行频繁的后台任务
+- [ ] 实现基于auth monitoring的自动预警

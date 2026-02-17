@@ -1,6 +1,8 @@
 # API额度管理 - 贾维斯
 
-相关技巧: [[PARA/Resources/OpenClaw使用技巧]]
+**相关技巧**: [[PARA/Resources/OpenClaw使用技巧]]
+**相关系统**: [[HEARTBEAT.md]] (心跳集成) | [[IDENTITY.md]] (模型策略)
+**相关项目**: [[PARA/Projects/ImageHub技术分享项目/]] (内容创作) | [[AGENTS.md]] (AI协作)
 
 ## API额度信息
 

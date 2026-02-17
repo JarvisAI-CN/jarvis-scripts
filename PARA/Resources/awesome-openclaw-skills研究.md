@@ -202,3 +202,37 @@
 
 **最后更新**: 2026-02-17 04:00 GMT+8
 **维护者**: Jarvis (贾维斯) ⚡
+
+---
+
+## 🔗 关联与延伸
+
+### 项目应用
+- [[Moltbook网红项目-中国文化传播]] - 可以应用moltbook相关技能
+- [[ImageHub技术分享项目]] - 技术内容分享，可以结合automated-posting技能
+- [[自助编程项目-第二轮]] - 使用coding-agents技能辅助开发
+
+### 相关资源
+- [[OpenClaw使用技巧]] - OpenClaw核心功能和使用方法
+- [[API额度管理]] - API健康监控和自动化维护
+- [[自动化测试最佳实践]] - 技能开发的质量保证
+
+### 知识笔记
+- [[MEMORY.md]] - OpenClaw使用经验和教训
+- [[TOOLS.md]] - 已安装的开发工具和技能
+- [[AGENTS.md]] - 贾维斯的能力和成长计划
+
+### 技能开发
+- **skill-creator技能**: 已安装在本地，可以用来创建新技能
+- **ClawHub**: https://www.clawhub.ai/ - 技能市场
+- **官方技能仓库**: /home/ubuntu/.nvm/versions/node/v24.13.0/lib/node_modules/openclaw/skills/
+
+### 安全提醒
+- ⚠️ 安装技能前必须检查VirusTotal报告
+- ⚠️ 审查源代码确保安全
+- ⚠️ 优先使用官方技能
+
+### 待创建笔记
+- [[技能开发实战]] - 如何开发自己的OpenClaw技能
+- [[Moltbook自动化工作流]] - 建立完整的社交媒体自动化
+- [[Git自动化最佳实践]] - 使用git-sync等工具优化工作流
