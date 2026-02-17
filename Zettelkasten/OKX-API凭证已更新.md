@@ -1,6 +1,9 @@
 # OKX API凭证已更新
 
 **更新时间**: 2026-02-06 11:57 GMT+8
+**相关技能**: [[okx]]
+**密码管理**: [[PASSWORDS.md]]
+**平台**: OKX Exchange (https://www.okx.com)
 
 ---
 

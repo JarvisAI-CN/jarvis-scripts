@@ -194,12 +194,12 @@ curl -I http://{DOMAIN}
     log("\n测试数据库配置...")
     test_conn = f"""
     <?php
-    \$conn = new mysqli('localhost', '{DB_USER}', '{DB_PASS}', '{DB_NAME}');
-    if (\$conn->connect_error) {{
-        die('Connection failed: ' . \$conn->connect_error);
+    \\$conn = new mysqli('localhost', '{DB_USER}', '{DB_PASS}', '{DB_NAME}');
+    if (\\$conn->connect_error) {{
+        die('Connection failed: ' . \\$conn->connect_error);
     }}
     echo 'Database connection successful!';
-    \$conn->close();
+    \\$conn->close();
     ?>
     """
     test_file = "/tmp/test_db.php"
