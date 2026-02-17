@@ -9,6 +9,15 @@
 
 ## ⚠️ 重要变更记录
 
+### 2026-02-17 07:45: ImageHub技术分享项目取消 ⭐⭐⭐
+- **动作**:
+  - 将项目从 `PARA/Projects/` 移动到 `PARA/Archives/`
+  - 停止所有相关的 cron 任务（`controversial_auto_publish_70min.py`、质量检查）
+  - 更新项目 README 状态为"🛑 已取消"
+  - 更新 TODO.md 移除相关任务
+- **原因**: 主人决定取消该项目
+- **影响**: PARA/Projects/ 现已清空，无活跃项目
+
 ### 2026-02-14 08:40: 邮箱系统统一与清理 ⭐⭐⭐
 - **动作**: 
   - 弃用不稳定的 `jarvis-cn-ai@outlook.com` 账户。
