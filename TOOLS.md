@@ -27,9 +27,9 @@ Things like:
 - Default speaker: Kitchen HomePod
 ```
 
-## Why Separate?
+## Why Separate
 
-Skills are shared. Your setup is yours. Keeping them apart means you can update skills without losing your notes, and share skills without leaking your infrastructure.
+Skills are shared. Your setup is yours. Keeping them apart means you can update skills without losing your infrastructure, and share skills without leaking your infrastructure.
 
 ---
 
@@ -96,4 +96,195 @@ Add whatever helps you do your job. This is your cheat sheet.
 - 定期备份数据库
 - 监控服务器资源
 
+## 🛠️ 开发工具集（升级后 - 2026-02-17）
+
+### Python开发工具 ⭐⭐⭐⭐⭐
+- **black 26.1.0** - 专业代码格式化
+  - 用途: 自动格式化Python代码，统一风格
+  - 命令: `black script.py`
+  - 配置: 遵循PEP 8规范
+  
+- **ruff 0.15.1** - 超快Python linter
+  - 用途: 代码检查、发现潜在问题
+  - 命令: `ruff check script.py`
+  - 优势: 比pylint快10-100倍
+  
+- **mypy** - 静态类型检查
+  - 用途: 类型检查，防止类型错误
+  - 命令: `mypy script.py`
+  
+- **pytest** - 测试框架
+  - 用途: 编写和运行测试
+  - 命令: `pytest test_script.py`
+  
+- **pylint** - 代码质量分析
+  - 用途: 深度代码审查
+  - 命令: `pylint script.py`
+
+### Git增强工具 ⭐⭐⭐⭐⭐
+- **gh 2.45.0** - GitHub官方CLI
+  - 用途: 仓库管理、PR、Issue、Release
+  - 命令: `gh repo create`, `gh pr create`
+  - 认证: 见PASSWORDS.md
+  
+- **jq 1.7** - JSON处理神器
+  - 用途: 解析、查询、转换JSON
+  - 命令: `cat file.json | jq '.key'`
+  
+- **git-lfs** - 大文件支持
+  - 用途: Git管理大文件（二进制、媒体）
+  - 命令: `git lfs track "*.psd"`
+
+### Node.js环境 ⭐⭐⭐⭐⭐
+- **Node.js v24.13.0** - LTS长期支持版
+  - 用途: 运行JavaScript/TypeScript服务端
+  - 包管理: npm 11.10.0
+  
+- **npm** - Node包管理器
+  - 命令: `npm install`, `npm run build`
+  - 全局包位置: `/usr/local/bin/`
+
+### 命令行工具 ⭐⭐⭐⭐⭐
+- **htop** - 交互式进程监控
+  - 用途: 实时查看CPU、内存、进程
+  - 命令: `htop`
+  
+- **ncdu** - 磁盘使用分析
+  - 用途: 快速找到占用空间的目录
+  - 命令: `ncdu /home/ubuntu`
+  
+- **ripgrep (rg)** - 超快文本搜索
+  - 用途: 代码搜索，比grep快很多
+  - 命令: `rg "pattern" /path`
+  
+- **bat** - 高亮cat
+  - 用途: 带语法高亮的文件查看
+  - 命令: `bat script.py`
+  
+- **exa** - 彩色ls
+  - 用途: 更好的文件列表
+  - 命令: `exa -la`
+  
+- **fzf** - 模糊查找器
+  - 用途: 快速查找文件
+  - 命令: `fzf`
+
+### AI SDK ⭐⭐⭐⭐⭐
+- **anthropic 0.79.0** - Claude API
+  - 用途: 调用Claude模型辅助编程
+  - 认证: 见PASSWORDS.md
+  
+- **openai 2.17.0** - GPT API
+  - 用途: 调用GPT-4辅助开发
+  - 认证: 见PASSWORDS.md
+  
+- **google-generativeai** - Gemini API
+  - 用途: 调用Gemini模型
+  - 认证: 见PASSWORDS.md
+
+### Docker容器化 ⭐⭐⭐⭐⭐
+- **Docker 29.2.1** - 容器平台
+  - 用途: 应用容器化、部署
+  - 命令: `docker build`, `docker run`
+  - 用户: ubuntu已加入docker组
+
+### 构建工具
+- **build-essential** - 编译工具链
+- **cmake** - 跨平台构建系统
+- **git-lfs** - Git大文件支持
+
+## 📊 工具使用示例
+
+### 代码质量保证流程
+```bash
+# 1. 格式化代码
+black script.py
+
+# 2. 检查代码
+ruff check script.py
+
+# 3. 类型检查
+mypy script.py
+
+# 4. 运行测试
+pytest test_script.py
+```
+
+### 快速搜索代码
+```bash
+# 搜索函数定义
+rg "def my_function" /path/to/code
+
+# 搜索TODO注释
+rg "TODO" /home/ubuntu/.openclaw/workspace
+
+# 搜索并高亮显示
+rg "pattern" --context 3
+```
+
+### GitHub自动化
+```bash
+# 创建新仓库
+gh repo create my-project --public
+
+# 创建PR
+gh pr create --title "Fix bug" --body "Description"
+
+# 查看Issues
+gh issue list
+```
+
+### Docker部署
+```bash
+# 构建镜像
+docker build -t myapp:v1.0 .
+
+# 运行容器
+docker run -d -p 8080:80 myapp:v1.0
+
+# 查看日志
+docker logs -f container_id
+```
+
+### JSON处理
+```bash
+# 提取字段
+cat file.json | jq '.key'
+
+# 格式化输出
+cat file.json | jq '.'
+
+# 数组操作
+cat file.json | jq '.items[] | .name'
+```
+
+## 🎯 升级收益
+
+### 代码质量
+- 格式化: 手动 → 自动（black）
+- 检查: 无 → 超快（ruff）
+- 类型: 无 → 静态检查（mypy）
+- 测试: 手动 → 框架化（pytest）
+
+### 开发效率
+- 搜索: grep → ripgrep（10-100倍快）
+- JSON: 手动解析 → jq（自动化）
+- Git: 基础命令 → GitHub CLI（全功能）
+
+### 语言支持
+- 升级前: Python为主
+- 升级后: Python + Node.js + 更多语言
+
+### 部署能力
+- 升级前: 直接部署
+- 升级后: Docker容器化
+
+### AI协作
+- 升级前: 单模型（OpenClaw主模型）
+- 升级后: 多模型协作（Claude + GPT + Gemini）
+
 ---
+
+**升级时间**: 2026-02-17 22:43
+**新增工具**: 15+
+**能力提升**: ⭐⭐⭐ → ⭐⭐⭐⭐⭐
