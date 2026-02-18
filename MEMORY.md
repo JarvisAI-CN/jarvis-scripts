@@ -571,3 +571,50 @@ result = subprocess.run(
 
 **最后更新**: 2026-02-18 19:30 GMT+8
 **主要变更**: 模型托底机制更新、保质期系统安全审计、GitHub仓库整理、OpenAI兼容代理服务
+
+---
+
+**最后更新**: 2026-02-18 20:27 GMT+8
+**主要变更**: OpenAI兼容代理服务已完成 - 支持智谱GLM和Kimi
+
+---
+
+## ⚠️ 重要变更记录（续）
+
+### 2026-02-18 20:27: OpenAI兼容代理服务完成 ⭐⭐⭐⭐⭐
+- **成果**:
+  - ✅ 创建完整代理服务（Python + FastAPI）
+  - ✅ 支持智谱GLM-4.7、GLM-5
+  - ✅ 支持Kimi K2.5（通过NVIDIA API）
+  - ✅ OpenAI Chat Completions协议完全兼容
+  - ✅ 服务已启动并运行在9000端口
+- **技术栈**:
+  - FastAPI 0.104+
+  - httpx（异步HTTP客户端）
+  - uvicorn（ASGI服务器）
+- **配置位置**: `/home/ubuntu/.openclaw/workspace/openai-proxy/`
+- **服务地址**: `http://150.109.204.23:9000`
+- **客户端密钥**: `jarvis-local-secret`
+- **上游模型**:
+  - 智谱GLM：使用现有API Key（从OpenClaw配置读取）
+  - Kimi：使用NVIDIA API Key（从OpenClaw配置读取）
+- **NAS配置模板**:
+  ```json
+  {
+    "provider": "jarvis-local",
+    "base_url": "http://150.109.204.23:9000",
+    "api": "openai-chat",
+    "api_key": "jarvis-local-secret",
+    "model": {
+      "id": "glm-4.7",
+      "name": "Zhipu GLM-4.7"
+    }
+  }
+  ```
+- **关键特性**:
+  - 无状态设计，不存储任何NAS数据
+  - 根据model参数自动路由到对应服务
+  - 支持temperature、max_tokens、top_p等参数
+  - 健康检查端点：GET /health
+- **一句话**: "NAS在中国不能访问外网AI服务，现在可以通过我这个代理转发到智谱和Kimi。"
+
