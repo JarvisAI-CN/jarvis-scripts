@@ -17,6 +17,11 @@ MODEL_ROUTES = {
     "glm-5": "zhipu",
     "glm-4.7": "zhipu",
     "kimi-k2.5": "nvidia",
+    "gemini-2.0-flash": "gemini",
+    "gemini-2.5-pro": "gemini",
+    "gemini-2.5-flash": "gemini",
+    "gemini-1.5-pro": "gemini",
+    "gemini-1.5-flash": "gemini",
 }
 
 async def forward_to_zhipu(messages: List[Dict], model: str, **kwargs):
@@ -25,9 +30,12 @@ async def forward_to_zhipu(messages: List[Dict], model: str, **kwargs):
     if not api_key:
         raise HTTPException(status_code=500, detail="Zhipu API key not configured")
     
+    # Use the coding endpoint (same as OpenClaw config)
+    url = "https://open.bigmodel.cn/api/coding/paas/v4/chat/completions"
+    
     async with httpx.AsyncClient() as client:
         response = await client.post(
-            "https://open.bigmodel.cn/api/paas/v4/chat/completions",
+            url,
             headers={
                 "Authorization": f"Bearer {api_key}",
                 "Content-Type": "application/json",
@@ -71,6 +79,45 @@ async def forward_to_nvidia(messages: List[Dict], model: str, **kwargs):
         
         return response.json()
 
+async def forward_to_gemini(messages: List[Dict], model: str, **kwargs):
+    """Forward request to Google Gemini via OpenAI-compatible endpoint"""
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        raise HTTPException(status_code=500, detail="Gemini API key not configured")
+
+    # Map model names for Gemini OpenAI endpoint
+    gemini_model_map = {
+        "gemini-2.0-flash": "gemini-2.0-flash",
+        "gemini-2.5-flash": "gemini-2.5-flash",
+        "gemini-2.5-pro": "gemini-2.5-pro",
+        "gemini-1.5-flash": "gemini-1.5-flash-001",
+        "gemini-1.5-pro": "gemini-1.5-pro-001",
+    }
+
+    gemini_model = gemini_model_map.get(model, model)
+
+    # Use OpenAI-compatible endpoint
+    async with httpx.AsyncClient() as client:
+        response = await client.post(
+            "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {api_key}",
+            },
+            json={
+                "model": gemini_model,
+                "messages": messages,
+                **kwargs
+            },
+            timeout=60.0
+        )
+
+        if response.status_code != 200:
+            raise HTTPException(status_code=response.status_code, detail=response.text)
+
+        # Response is already in OpenAI format
+        return response.json()
+
 def verify_api_key(request: Request) -> bool:
     """Verify Bearer token"""
     auth_header = request.headers.get("Authorization", "")
@@ -94,6 +141,11 @@ async def list_models():
             {"id": "glm-4.7", "name": "Zhipu GLM-4.7"},
             {"id": "glm-5", "name": "Zhipu GLM-5"},
             {"id": "kimi-k2.5", "name": "Kimi K2.5"},
+            {"id": "gemini-2.0-flash", "name": "Gemini 2.0 Flash"},
+            {"id": "gemini-2.5-pro", "name": "Gemini 2.5 Pro"},
+            {"id": "gemini-2.5-flash", "name": "Gemini 2.5 Flash"},
+            {"id": "gemini-1.5-pro", "name": "Gemini 1.5 Pro"},
+            {"id": "gemini-1.5-flash", "name": "Gemini 1.5 Flash"},
         ]
     }
 
@@ -131,6 +183,8 @@ async def chat_completions(request: Request):
             result = await forward_to_zhipu(messages, model, **kwargs)
         elif provider == "nvidia":
             result = await forward_to_nvidia(messages, model, **kwargs)
+        elif provider == "gemini":
+            result = await forward_to_gemini(messages, model, **kwargs)
         else:
             raise HTTPException(status_code=400, detail=f"Unknown provider: {provider}")
         
