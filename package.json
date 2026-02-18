@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "ai-labs-claude-skills": "^2.0.1"
+  }
+}

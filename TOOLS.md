@@ -288,3 +288,45 @@ cat file.json | jq '.items[] | .name'
 **升级时间**: 2026-02-17 22:43
 **新增工具**: 15+
 **能力提升**: ⭐⭐⭐ → ⭐⭐⭐⭐⭐
+
+## 📊 PPTX技能 (2026-02-18安装)
+
+**技能来源**: https://skills.sh/anthropics/skills/pptx
+**状态**: ✅ 已安装并验证
+
+### 功能概览
+- **读取/分析**: 提取PPTX文本内容，生成缩略图预览
+- **编辑**: 修改现有演示文稿，添加/删除幻灯片
+- **创建**: 从零生成PPTX演示文稿
+- **转换**: PPTX ↔ PDF，格式转换
+
+### 依赖组件
+- **Python**: markitdown[pptx], Pillow (虚拟环境: ~/.venv/pptx-skill/)
+- **Node.js**: pptxgenjs@4.0.1
+- **系统**: LibreOffice 24.2.7.2, Poppler 24.02.0
+
+### 技能位置
+- 技能目录: `/home/ubuntu/.openclaw/workspace/skills/pptx/`
+- 文档: SKILL.md, editing.md, pptxgenjs.md
+- 脚本: scripts/thumbnail.py, add_slide.py, clean.py
+
+### 快速使用
+```bash
+# 激活环境
+source ~/.venv/pptx-skill/bin/activate
+
+# 提取PPTX文本
+python -m markitdown presentation.pptx
+
+# 生成缩略图
+python /home/ubuntu/.openclaw/workspace/skills/pptx/scripts/thumbnail.py presentation.pptx
+
+# 验证安装
+python /home/ubuntu/.openclaw/workspace/skills/pptx/verify_installation.py
+```
+
+### 应用场景
+- 自动化生成报告演示文稿
+- 批量处理PPTX文件
+- 提取演示文稿内容用于总结
+- 基于模板创建标准化演示
