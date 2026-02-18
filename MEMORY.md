@@ -9,6 +9,30 @@
 
 ## ⚠️ 重要变更记录
 
+### 2026-02-19 00:35: 托底链失效修复 ⭐⭐⭐⭐⭐
+- **问题**: 智谱额度用完后，所有模型失败，托底机制失效
+- **原因**: fallback链里没有Kimi，导致：
+  - GPT-5.1 → cooldown（rate limit）
+  - 智谱 → cooldown（额度用完）
+  - Gemini → cooldown（OAuth失效）
+  - **全部失败** → "All models failed (3)"
+- **修复**: 把Kimi加到fallback链第2位
+- **新托底链**:
+  ```json
+  primary: openai-codex/gpt-5.1
+  fallbacks: [
+    "zhipu/glm-4.7",
+    "nvidia/moonshotai/kimi-k2.5",  // 新加
+    "google-antigravity/gemini-3-pro-low"
+  ]
+  ```
+- **效果**: 智谱额度用完 → 自动切Kimi → 不会全部挂掉
+- **智谱重置时间**: 0:26（每5小时）→ 下次5:26
+- **待办**:
+  - 修复GPT-5.1的OAuth问题
+  - 修复Gemini的OAuth问题
+- **一句话**: "托底链太短是致命缺陷，现在有Kimi兜底了。"
+
 ### 2026-02-18 04:45: 代码质量提升行动 ⭐⭐⭐⭐⭐
 - **背景**: 系统升级后安装了black、ruff等工具，但现有脚本尚未应用
 - **行动**: 在凌晨时段自主执行代码质量检查和修复
