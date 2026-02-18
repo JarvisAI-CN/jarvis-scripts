@@ -15,7 +15,7 @@ TODO_FILE = os.path.join(WORKSPACE_DIR, "TODO.md")
 PROJECTS_DIR = os.path.join(WORKSPACE_DIR, "PARA/Projects")
 STATE_FILE = os.path.join(
     WORKSPACE_DIR,
-    "PARA/Projects/ImageHub技术分享项目/这个项目的文件/日志/controversial_state.json",
+    "PARA/Archives/ImageHub技术分享项目/这个项目的文件/日志/controversial_state.json",
 )
 
 
