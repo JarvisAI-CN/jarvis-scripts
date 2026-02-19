@@ -2,12 +2,72 @@
 
 **创建时间**: 2026-02-04
 **用途**: 存储长期记忆、重要经验、核心价值观
-**最后更新**: 2026-02-19 21:55
-**主要变更**: 保质期系统v2.8.5发布 - API密钥管理集成
+**最后更新**: 2026-02-19 22:33
+**主要变更**: 完成三层Agent工作流（A+B+C）
 
 ---
 
 ## ⚠️ 重要变更记录
+
+### 2026-02-19 22:36: TDD Developer模型更新为GPT-5.3-Codex ⭐⭐⭐⭐⭐
+- **更新内容**: tdd-developer的模型从智谱GLM改为GPT-5.3-Codex
+- **新配置**:
+  - Primary: GPT-5.3-Codex (16K maxTokens, reasoning=true)
+  - Fallback: 智谱GLM-5
+- **选择理由**: GPT-5.3-Codex是专为代码优化的模型，编码能力更强
+- **一句话**: "编码能力拉满，TDD实践如虎添翼。"
+
+### 2026-02-19 22:33: 创建TDD Developer Agent ⭐⭐⭐⭐⭐
+- **Agent名称**: tdd-developer (TDD高级开发工程师)
+- **目录位置**: `/home/ubuntu/.openclaw/agents/tdd-developer/`
+- **核心职责**:
+  - 根据Agent A的接口契约实现代码
+  - TDD方式编写单元测试
+  - 修复Bug时先写测试重现问题
+  - 接口变更必须显式声明
+- **工作流程**:
+  1. 实现逻辑（严格遵循接口契约）
+  2. 编写测试（正常路径、边界、错误处理）
+  3. 修复模式（重现Bug→修复→验证）
+- **输出格式**:
+  1. Change Log（修改文件清单）
+  2. Code Blocks（业务代码+测试代码）
+  3. Dependency Check（依赖影响分析）
+- **使用模型**: GPT-5.3-Codex (primary) / 智谱GLM-5 (fallback)
+- **系统提示词**: `/home/ubuntu/.openclaw/agents/tdd-developer/agent/SYSTEM.md`
+- **一句话**: "严谨的TDD实践者，测试即文档。"
+
+### 2026-02-19 22:27: 创建Regression Guard Agent ⭐⭐⭐⭐⭐
+- **Agent名称**: regression-guard (质量保障与回归测试专家)
+- **目录位置**: `/home/ubuntu/.openclaw/agents/regression-guard/`
+- **核心职责**:
+  - 审计代码是否符合架构师的接口契约
+  - 全量回归分析（测试覆盖率、依赖影响）
+  - 静态安全扫描（SQL注入、XSS、硬编码密码等）
+- **审计逻辑**:
+  1. 接口一致性检查（对比Agent A和Agent B的产出）
+  2. 回归风险分析（是否会破坏老功能）
+  3. 安全漏洞扫描
+- **输出格式**: 严格JSON格式（status: PASS/FAIL, regression_risk, issue_detail等）
+- **使用模型**: 智谱GLM-5 (primary) / GLM-4.7 (fallback)
+- **系统提示词**: `/home/ubuntu/.openclaw/agents/regression-guard/agent/SYSTEM.md`
+- **一句话**: "项目的守护神，零容忍安全漏洞和破坏性变更。"
+
+### 2026-02-19 22:15: 创建The Architect Agent ⭐⭐⭐⭐⭐
+- **Agent名称**: the-architect (首席系统架构师)
+- **目录位置**: `/home/ubuntu/.openclaw/agents/the-architect/`
+- **核心职责**:
+  - 将复杂需求拆解为低耦合的模块化架构
+  - 编写接口契约（Input/Output规范）
+  - 建立依赖图谱，防止循环依赖
+- **输出格式**:
+  1. 模块化架构图 (Mermaid/ASCII)
+  2. 接口契约 (TypeScript风格)
+  3. 目录结构树
+  4. 验收测试标准
+- **使用模型**: 智谱GLM-5 (primary) / GLM-4.7 (fallback)
+- **系统提示词**: `/home/ubuntu/.openclaw/agents/the-architect/agent/SYSTEM.md`
+- **一句话**: "复杂系统的架构设计师，确保代码可维护、可扩展。"
 
 ### 2026-02-19 21:55: 保质期系统v2.8.5 API密钥管理集成 ⭐⭐⭐⭐⭐
 - **用户需求**: "你的那个api秘钥生成应该集合在admin.php这个后台管理文件里面而不是单独做了一个页面"
