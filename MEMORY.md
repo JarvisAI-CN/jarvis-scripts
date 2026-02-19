@@ -9,9 +9,10 @@
 
 ## ⚠️ 重要变更记录
 
-### 2026-02-19 13:32: 保质期系统v2.8.2完成 ⭐⭐⭐⭐⭐
+### 2026-02-19 14:01: 保质期系统v2.8.2完成 ⭐⭐⭐⭐⭐
 - **完成时间**: 2026-02-19 13:31-13:32 GMT+8
 - **Git commit**: 350138b "chore(security): harden upgrade api and api-key storage for v2.8.2"
+- **工作流程**: 智谱GLM写代码 → o4-mini安全审计
 - **安全修复**:
   - ✅ 升级接口需管理员权限（check_upgrade/execute_upgrade）
   - ✅ SQL注入修复（submit_session使用预处理语句）
@@ -21,10 +22,14 @@
 - **仓库整理**:
   - ✅ 创建干净仓库expiry-clean/
   - ✅ 只包含项目代码+SQL+文档
-  - ✅ 已推送到GitHub（刚才推送）
+  - ✅ 已推送到GitHub（13:58推送）
   - ✅ 仓库：JarvisAI-CN/expiry-management-system-clean
+- **GitHub Release**: 
+  - ✅ 创建v2.8.2正式发布（14:01）
+  - ✅ 打包部署包（71KB tar.gz）
+  - ✅ Release地址：https://github.com/JarvisAI-CN/expiry-management-system-clean/releases/tag/v2.8.2
 - **遗留问题**: 2.9版本计划（自动下载升级、一键升级/回滚、淡蓝苹果风UI）
-- **一句话**: "安全审计发现的问题全部修复，代码已推送到干净仓库。"
+- **一句话**: "安全审计发现的问题全部修复，代码已推送到干净仓库，并创建了正式的GitHub Release。"
 
 ### 2026-02-19 13:35: 移除Google OAuth监控 ⭐⭐⭐⭐⭐
 - **用户指令**: "不是都说了吗 Google OAuth即将过期 这个不用理会，我不用这个了"
