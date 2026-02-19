@@ -9,6 +9,20 @@
 
 ## ⚠️ 重要变更记录
 
+### 2026-02-19 14:32: 保质期系统v2.8.3.2盘点人显示 ⭐⭐⭐⭐⭐
+- **用户需求**: "盘点单上面要写盘点人跟盘点时间"
+- **功能**:
+  - ✅ 盘点单明细显示盘点人用户名
+  - ✅ 盘点单明细显示盘点时间（中文格式）
+  - ✅ 使用emoji图标美化显示
+- **数据库变更**:
+  - inventory_sessions表添加username字段
+  - 提交盘点单时保存$_SESSION['username']
+  - 升级脚本：upgrade_v2.8.3.2.php
+- **GitHub Release**: https://github.com/JarvisAI-CN/expiry-management-system-clean/releases/tag/v2.8.3.2
+- **向后兼容**: 旧数据username为NULL，不影响使用
+- **一句话**: "用户需要的追踪功能，10分钟完成开发上线。"
+
 ### 2026-02-19 14:29: 保质期系统v2.8.3.1性能优化 ⭐⭐⭐⭐⭐
 - **问题**: 用户反馈点击扫一扫时变得很卡
 - **原因**: `checkFlashlightSupport()`重复请求摄像头，与html5QrCode冲突
