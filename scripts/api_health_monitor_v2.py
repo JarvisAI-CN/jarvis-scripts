@@ -63,38 +63,42 @@ def get_models_status():
 
 
 def analyze_status(status_data):
-    """分析状态数据"""
+    """分析状态数据 - 只监控实际使用的模型（智谱、Kimi等）"""
     if not status_data:
         return {"healthy": False, "alerts": ["无法获取模型状态数据"]}
 
     alerts = []
     auth_data = status_data.get("auth", {})
-    providers = auth_data.get("oauth", {}).get("providers", [])
 
-    # 检查主模型供应方 (google-antigravity)
-    google_found = False
-    for p in providers:
-        if p.get("provider") == "google-antigravity":
-            google_found = True
-            if p.get("status") != "ok":
-                alerts.append(f"Google API 状态异常: {p.get('status')}")
+    # 检查关键模型供应商（智谱、NVIDIA/Kimi）
+    all_providers = auth_data.get("providers", [])
 
-            # 检查过期时间
-            remaining_ms = p.get("remainingMs", 0)
-            if remaining_ms < 1800000:  # 少于30分钟
-                alerts.append(f"Google API 认证即将过期: {remaining_ms//60000}分钟")
+    # 检查智谱
+    zhipu_ok = any(
+        p.get("provider") == "zhipu"
+        and p.get("effective", {}).get("kind") == "models.json"
+        for p in all_providers
+    )
+    if not zhipu_ok:
+        alerts.append("智谱 (Zhipu) 配置未生效")
 
-    if not google_found:
-        # 检查非OAuth供应商 (zhipu, nvidia)
-        # 这些通常在 auth.providers 列表里
-        all_providers = auth_data.get("providers", [])
-        zhipu_ok = any(
-            p.get("provider") == "zhipu"
-            and p.get("effective", {}).get("kind") == "models.json"
-            for p in all_providers
-        )
-        if not zhipu_ok:
-            alerts.append("智谱 (Zhipu) 配置未生效")
+    # 检查Kimi (通过NVIDIA)
+    nvidia_ok = any(
+        p.get("provider") == "nvidia"
+        for p in all_providers
+    )
+    if not nvidia_ok:
+        alerts.append("NVIDIA (Kimi) 配置未生效")
+
+    # 检查OpenAI (ChatGPT)
+    openai_ok = any(
+        p.get("provider") == "openai-codex"
+        for p in all_providers
+    )
+    if not openai_ok:
+        alerts.append("OpenAI (ChatGPT) 配置未生效")
+
+    # 不再检查Google OAuth，用户已停用
 
     return {"healthy": len(alerts) == 0, "alerts": alerts}
 
