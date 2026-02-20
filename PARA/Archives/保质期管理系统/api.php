@@ -383,7 +383,7 @@ function getCategoriesData() {
         'success' => true,
         'endpoint' => 'categories',
         'count' => count($categories),
-        'data' => $categories  // 保持向后兼容，返回 'data' 字段
+        'categories' => $categories  // 前端期望的字段名
     ];
 }
 
