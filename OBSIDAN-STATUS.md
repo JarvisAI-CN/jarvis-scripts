@@ -86,10 +86,9 @@
 ## 📋 待办清单
 
 ### 短期任务（本周）
-1. [ ] 优化 Moltbook 项目笔记
-   - 链接12篇帖子内容
-   - 链接到内容创作最佳实践
-   - 链接到自动化任务记录
+1. [ ] 优化 PARA/Projects 与 Areas 的双链
+   - 让每个活跃项目 README 至少链接：1个Area + 2个Resources
+   - 让每个Area 至少链接：2个Projects + 2个Resources
 
 2. [x] 优化 PARA/Resources ✅ 2026-02-18 02:30
    - [x] API额度管理 ← → 技术文档
@@ -127,9 +126,9 @@
 4. 更新本文件状态
 
 **优先级**:
-- ⭐⭐⭐ 高：Moltbook项目笔记优化
-- ⭐⭐ 中：PARA/Projects 索引
-- ⭐ 低：Archives整理
+- ⭐⭐⭐ 高：PARA/Projects 与 Areas 互相链接（建立“项目↔领域↔资源”网络）
+- ⭐⭐ 中：Zettelkasten 永久笔记的主题索引页
+- ⭐ 低：Archives 历史链接整理
 
 ---
 

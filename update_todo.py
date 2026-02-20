@@ -5,7 +5,6 @@ TODO.md自动更新脚本 v2.1
 动态发现项目，智能分类，反映真实进度
 """
 
-import json
 import os
 import re
 from datetime import datetime
@@ -13,10 +12,6 @@ from datetime import datetime
 WORKSPACE_DIR = "/home/ubuntu/.openclaw/workspace"
 TODO_FILE = os.path.join(WORKSPACE_DIR, "TODO.md")
 PROJECTS_DIR = os.path.join(WORKSPACE_DIR, "PARA/Projects")
-STATE_FILE = os.path.join(
-    WORKSPACE_DIR,
-    "PARA/Archives/ImageHub技术分享项目/这个项目的文件/日志/controversial_state.json",
-)
 
 
 def get_project_info(project_name):
@@ -93,32 +88,6 @@ def get_project_info(project_name):
         return None
 
 
-def get_moltbook_status():
-    """特殊处理 Moltbook (因为有外部封禁状态)"""
-    try:
-        with open(STATE_FILE, "r") as f:
-            state = json.load(f)
-            next_post = state.get("next_post", 14)
-            posts = state.get("posts", {})
-            published_count = len(
-                [p for p in posts.values() if p.get("status") == "published"]
-            )
-
-            now = datetime.now()
-            resume_time = datetime(2026, 2, 17, 9, 0)
-            is_suspended = now < resume_time
-
-            return {
-                "name": "Moltbook 账户恢复与清理",
-                "status": "⏸️ 暂停中 (至 02-17)" if is_suspended else "🔄 待恢复",
-                "progress": f"{published_count}/8",
-                "remarks": f"1. 解封后清理重复帖子；2. 恢复发布 (Post {next_post})",
-                "target_time": "2026-02-17 09:00",
-            }
-    except Exception:
-        return None
-
-
 def generate_todo():
     """生成TODO.md内容"""
     now = datetime.now()
@@ -138,9 +107,6 @@ def generate_todo():
                     else:
                         active_projects.append(info)
 
-    # 获取 Moltbook 特殊状态
-    moltbook = get_moltbook_status()
-
     # 构造第一象限
     urgent_items = []
     for p in active_projects:
@@ -148,10 +114,6 @@ def generate_todo():
         if p["remarks"]:
             item_text += f"\n**任务**: {p['remarks']}"
         urgent_items.append(item_text)
-
-    if moltbook:
-        moltbook_text = f"#### {moltbook['name']} 💬\n**状态**: {moltbook['status']}\n**进度**: {moltbook['progress']}\n**目标时间**: {moltbook['target_time']}\n**任务**: {moltbook['remarks']}"
-        urgent_items.append(moltbook_text)
 
     # 构造已完成
     done_items = []
@@ -209,7 +171,6 @@ def generate_todo():
 - [x] **123盘备份**: 每2小时执行 (正常)
 - [x] **心跳响应**: 实时监听 (正常)
 - [x] **系统巡检**: 磁盘空间、挂载状态 (正常)
-- [ ] **Moltbook发布**: 暂停中 (预期 02-17 恢复)
 
 ---
 

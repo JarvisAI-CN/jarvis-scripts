@@ -13,9 +13,10 @@
 - `[[内容创作技巧库]]` - 实用的创作技巧和模板
 - `[[自动化测试最佳实践]]` - 内容质量保证和测试方法
 
-### 🤖 OpenClaw相关 (2个)
+### 🤖 OpenClaw相关 (3个)
 - `[[OpenClaw使用技巧]]` - OpenClaw的高级用法和最佳实践
 - `[[awesome-openclaw-skills研究]]` - OpenClaw技能生态研究 (2026-02-18新增)
+- `[[PARA/Resources/OpenClaw/awesome-openclaw-skills-2026-02-20|awesome-openclaw-skills速览(2026-02-20)]]` - 按我们当前系统梳理的选型方向与风险提示
 
 ### 🔧 技术工具 (3个)
 - `[[API额度管理]]` - API配额管理和优化策略
@@ -38,6 +39,7 @@
 ### OpenClaw使用时查看
 1. `[[OpenClaw使用技巧]]` - 遇到问题时查阅
 2. `[[awesome-openclaw-skills研究]]` - 发现新技能时查阅
+3. `[[PARA/Resources/OpenClaw/awesome-openclaw-skills-2026-02-20|awesome-openclaw-skills速览(2026-02-20)]]` - 快速挑方向/定安装标准
 
 ### 系统配置时查看
 1. `[[WebDAV与云存储]]` - 配置云存储时使用
@@ -65,9 +67,9 @@
 
 ## 📊 统计信息
 
-**总资源数**: 8个
+**总资源数**: 9个
 - 内容创作: 3个
-- OpenClaw: 2个
+- OpenClaw: 3个
 - 技术工具: 3个
 
 **最新更新**: 2026-02-18 02:30 (PARA Resources优化完成)
