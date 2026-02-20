@@ -11,6 +11,9 @@
 - 2026-02-19：发布 v2.9.0（安装阶段 SQL 执行错误不再被忽略；修复 api_keys 表缺失问题）。
 - 2026-02-20：将本项目提升为 PARA/Projects 重点跟踪。
 
+## 归属领域（Areas）
+- [[PARA/Areas/门店运营与库存管理]]
+
 ## 关键资源（Resources）
 - `[[PARA/Resources/自动化测试最佳实践]]`
 - `[[PARA/Resources/PARA系统-项目归档流程]]`
