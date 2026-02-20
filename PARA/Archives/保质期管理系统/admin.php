@@ -9,6 +9,21 @@
 session_start();
 require_once 'db.php';
 
+// 字符编码转换函数（GBK/GB2312 -> UTF-8）
+function convertToUtf8($str) {
+    if (!$str) return $str;
+    
+    // 检测编码
+    $encoding = mb_detect_encoding($str, ['UTF-8', 'GBK', 'GB2312', 'ASCII'], true);
+    
+    // 如果不是UTF-8，转换为UTF-8
+    if ($encoding && $encoding !== 'UTF-8') {
+        $str = mb_convert_encoding($str, 'UTF-8', $encoding);
+    }
+    
+    return $str;
+}
+
 // 严格权限检查
 if (!isset($_SESSION['user_id'])) { 
     if (isset($_GET['api'])) {
@@ -18,6 +33,219 @@ if (!isset($_SESSION['user_id'])) {
     }
     header("Location: index.php");
     exit; 
+}
+
+// 处理传统表单提交（上传SKU文件）
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'upload_sku') {
+    $conn = getDBConnection();
+    
+    if (!isset($_FILES['sku_file'])) {
+        $error = json_encode(['success'=>false, 'message'=>'未选择文件']);
+        header("Location: admin.php?page=sku&upload_result=" . urlencode($error));
+        exit;
+    }
+
+    $file = $_FILES['sku_file'];
+    
+    // 详细的错误信息
+    if ($file['error'] !== UPLOAD_ERR_OK) {
+        $errorMessages = [
+            UPLOAD_ERR_INI_SIZE => '文件超过php.ini设置的大小',
+            UPLOAD_ERR_FORM_SIZE => '文件超过表单设置的大小',
+            UPLOAD_ERR_PARTIAL => '文件只有部分被上传',
+            UPLOAD_ERR_NO_FILE => '没有文件被上传',
+            UPLOAD_ERR_NO_TMP_DIR => '找不到临时文件夹',
+            UPLOAD_ERR_CANT_WRITE => '文件写入失败',
+            UPLOAD_ERR_EXTENSION => 'PHP扩展停止了文件上传',
+        ];
+        $errorMsg = $errorMessages[$file['error']] ?? "未知错误(错误代码:{$file['error']})";
+        $error = json_encode(['success'=>false, 'message'=>"上传失败: $errorMsg"]);
+        header("Location: admin.php?page=sku&upload_result=" . urlencode($error));
+        exit;
+    }
+
+    // 保存文件
+    $filename = 'sku_upload_' . time() . '_' . basename($file['name']);
+    $filepath = __DIR__ . '/uploads/' . $filename;
+    if (!is_dir(__DIR__ . '/uploads')) {
+        mkdir(__DIR__ . '/uploads', 0755, true);
+    }
+
+    if (!move_uploaded_file($file['tmp_name'], $filepath)) {
+        $error = json_encode(['success'=>false, 'message'=>'文件保存失败，请检查uploads目录权限']);
+        header("Location: admin.php?page=sku&upload_result=" . urlencode($error));
+        exit;
+    }
+
+    // 同步处理文件（立即解析，不使用exec）
+    try {
+        // 根据文件扩展名选择解析方式
+        $fileExt = strtolower(pathinfo($filepath, PATHINFO_EXTENSION));
+
+        if ($fileExt === 'csv') {
+            // 解析CSV文件
+            $handle = fopen($filepath, 'r');
+            if (!$handle) {
+                throw new Exception("无法打开文件");
+            }
+
+            $uploaded_skus = [];
+            $row_count = 0;
+
+            while (($data = fgetcsv($handle, 1000, ',')) !== FALSE) {
+                $row_count++;
+
+                if (empty($data[0])) continue;
+
+                if ($row_count === 1 && !preg_match('/^\d+$/', $data[0])) {
+                    continue;
+                }
+
+                $sku = trim($data[0]);
+                $name = trim($data[1] ?? '');
+                $category_name = trim($data[2] ?? ''); // 第三列：分类
+
+                // 字符编码转换（GBK -> UTF-8）
+                $sku = convertToUtf8($sku);
+                $name = convertToUtf8($name);
+                $category_name = convertToUtf8($category_name);
+
+                if ($sku) {
+                    $uploaded_skus[$sku] = [
+                        'name' => $name,
+                        'category_name' => $category_name
+                    ];
+                }
+            }
+
+            fclose($handle);
+
+        } elseif ($fileExt === 'xlsx' || $fileExt === 'xls') {
+            // 解析Excel文件（需要扩展）
+            if (!class_exists('ZipArchive')) {
+                throw new Exception("Excel解析需要PHP扩展（zip），请联系管理员安装");
+            }
+
+            require_once __DIR__ . '/xlsx_parser.php';
+            $rows = parseXlsxFile($filepath);
+
+            $uploaded_skus = [];
+            $row_count = 0;
+
+            foreach ($rows as $rowData) {
+                $row_count++;
+
+                if (empty($rowData[0])) continue;
+
+                if ($row_count === 1 && !preg_match('/^\d+$/', $rowData[0])) {
+                    continue;
+                }
+
+                $sku = trim($rowData[0]);
+                $name = trim($rowData[1] ?? '');
+                $category_name = trim($rowData[2] ?? ''); // 第三列：分类
+
+                // 字符编码转换（GBK -> UTF-8）
+                $sku = convertToUtf8($sku);
+                $name = convertToUtf8($name);
+                $category_name = convertToUtf8($category_name);
+
+                if ($sku) {
+                    $uploaded_skus[$sku] = [
+                        'name' => $name,
+                        'category_name' => $category_name
+                    ];
+                }
+            }
+
+        } else {
+            throw new Exception("不支持的文件格式：$fileExt");
+        }
+
+        // 对比数据库
+        $new_skus = [];
+        $missing_skus = [];
+        $duplicate_skus = [];
+
+        // 检查新增和重复SKU
+        $checkStmt = $conn->prepare("SELECT sku FROM products WHERE sku = ?");
+        foreach ($uploaded_skus as $sku => $data) {
+            $checkStmt->bind_param("s", $sku);
+            $checkStmt->execute();
+            $exists = $checkStmt->get_result()->num_rows > 0;
+
+            if (!$exists) {
+                $new_skus[] = [
+                    'sku' => $sku,
+                    'name' => $data['name'],
+                    'category_name' => $data['category_name']
+                ];
+            }
+        }
+
+        // 检查缺失SKU（数据库中有但文件中没有）
+        $allDbRes = $conn->query("SELECT sku, name FROM products");
+        $allDbSkus = [];
+        while ($row = $allDbRes->fetch_assoc()) {
+            $allDbSkus[$row['sku']] = $row['name'];
+        }
+
+        foreach ($allDbSkus as $sku => $name) {
+            if (!isset($uploaded_skus[$sku])) {
+                $missing_skus[] = ['sku' => $sku, 'name' => $name, 'category_name' => ''];
+            }
+        }
+
+        // 检查并添加category_name字段
+        $checkColumn = $conn->query("SHOW COLUMNS FROM sku_todos LIKE 'category_name'");
+        if ($checkColumn->num_rows == 0) {
+            $conn->query("ALTER TABLE sku_todos ADD COLUMN category_name VARCHAR(100) DEFAULT '' AFTER name");
+        }
+
+        // 保存到sku_todos表
+        $clearStmt = $conn->prepare("DELETE FROM sku_todos WHERE source_file = ?");
+        $clearStmt->bind_param("s", $filename);
+        $clearStmt->execute();
+
+        $insertStmt = $conn->prepare("INSERT INTO sku_todos (sku, name, category_name, status, source_file) VALUES (?, ?, ?, 'pending', ?)");
+        foreach ($new_skus as $item) {
+            $insertStmt->bind_param("ssss", $item['sku'], $item['name'], $item['category_name'], $filename);
+            $insertStmt->execute();
+        }
+        foreach ($missing_skus as $item) {
+            $insertStmt->bind_param("ssss", $item['sku'], $item['name'], $item['category_name'], $filename);
+            $insertStmt->execute();
+        }
+
+        // 更新任务状态
+        $resultData = json_encode([
+            'total_rows' => $row_count,
+            'new_skus' => count($new_skus),
+            'missing_skus' => count($missing_skus),
+            'duplicate_skus' => count($duplicate_skus)
+        ]);
+
+        $updateStmt = $conn->prepare("UPDATE sku_upload_tasks SET status = 'completed', total_rows = ?, new_skus = ?, missing_skus = ?, duplicate_skus = ?, result_data = ? WHERE id = ?");
+        $newCount = count($new_skus);
+        $missingCount = count($missing_skus);
+        $dupCount = count($duplicate_skus);
+        $updateStmt->bind_param("iiiisi", $row_count, $newCount, $missingCount, $dupCount, $resultData, $task_id);
+        $updateStmt->execute();
+
+        $successResult = json_encode([
+            'success'=>true,
+            'message'=>"✅ 处理完成！新增{$newCount}个，缺失{$missingCount}个",
+            'filename'=>$filename,
+            'task'=>['filename'=>$filename, 'result_data'=>$resultData]
+        ]);
+        header("Location: admin.php?page=sku&upload_result=" . urlencode($successResult));
+        exit;
+
+    } catch (Exception $e) {
+        $error = json_encode(['success'=>false, 'message'=>"处理失败: " . $e->getMessage()]);
+        header("Location: admin.php?page=sku&upload_result=" . urlencode($error));
+        exit;
+    }
 }
 
 define('APP_VERSION', '2.7.3-alpha');
@@ -87,8 +315,20 @@ if (isset($_GET['api'])) {
         }
 
         $file = $_FILES['csv_file'];
+        
+        // 详细的错误信息
         if ($file['error'] !== UPLOAD_ERR_OK) {
-            echo json_encode(['success'=>false, 'message'=>'文件上传失败']); exit;
+            $errorMessages = [
+                UPLOAD_ERR_INI_SIZE => '文件超过php.ini设置的大小',
+                UPLOAD_ERR_FORM_SIZE => '文件超过表单设置的大小',
+                UPLOAD_ERR_PARTIAL => '文件只有部分被上传',
+                UPLOAD_ERR_NO_FILE => '没有文件被上传',
+                UPLOAD_ERR_NO_TMP_DIR => '找不到临时文件夹',
+                UPLOAD_ERR_CANT_WRITE => '文件写入失败',
+                UPLOAD_ERR_EXTENSION => 'PHP扩展停止了文件上传',
+            ];
+            $errorMsg = $errorMessages[$file['error']] ?? "未知错误(错误代码:{$file['error']})";
+            echo json_encode(['success'=>false, 'message'=>"上传失败: $errorMsg"]); exit;
         }
 
         // 保存文件
@@ -99,7 +339,7 @@ if (isset($_GET['api'])) {
         }
 
         if (!move_uploaded_file($file['tmp_name'], $filepath)) {
-            echo json_encode(['success'=>false, 'message'=>'文件保存失败']); exit;
+            echo json_encode(['success'=>false, 'message'=>'文件保存失败，请检查uploads目录权限']); exit;
         }
 
         // 创建上传任务记录
@@ -109,7 +349,7 @@ if (isset($_GET['api'])) {
         $task_id = $conn->insert_id;
 
         // 触发异步处理
-        $php_path = exec('which php');
+        $php_path = exec('which php8.3');
         $script_path = __DIR__ . '/process_sku_upload.php';
         exec("$php_path $script_path $task_id > /dev/null 2>&1 &");
 
@@ -158,6 +398,17 @@ if (isset($_GET['api'])) {
             $params[] = $search;
         }
 
+        // 按分类筛选
+        if (!empty($_GET['category_filter'])) {
+            $category_filter = $_GET['category_filter'];
+            if ($category_filter === 'none') {
+                $where .= " AND (category_name IS NULL OR category_name = '')";
+            } else {
+                $where .= " AND category_name = ?";
+                $params[] = $category_filter;
+            }
+        }
+
         // 获取总数
         $count_sql = "SELECT COUNT(*) as total FROM sku_todos WHERE $where";
         if (!empty($params)) {
@@ -192,6 +443,17 @@ if (isset($_GET['api'])) {
             'page'=>$page,
             'pages'=>ceil($total/$limit)
         ]);
+        exit;
+    }
+
+    if ($action === 'get_upload_categories') {
+        // 获取上传文件中的所有分类
+        $res = $conn->query("SELECT DISTINCT category_name FROM sku_todos WHERE category_name IS NOT NULL AND category_name != '' ORDER BY category_name");
+        $categories = [];
+        while ($row = $res->fetch_assoc()) {
+            $categories[] = $row['category_name'];
+        }
+        echo json_encode(['success'=>true, 'categories'=>$categories]);
         exit;
     }
 
@@ -337,14 +599,37 @@ if (isset($_GET['api'])) {
                                 格式：两列（SKU, 商品名），支持 .xlsx、.xls、.csv 格式。<br>
                                 系统将自动对比数据库，识别新增/缺失/重复的SKU。
                             </p>
-                            <div class="row g-2">
-                                <div class="col-8">
-                                    <input type="file" id="skuFileInput" accept=".csv,.xlsx,.xls" class="form-control">
+                            
+                            <?php if (isset($_GET['upload_result'])): ?>
+                                <?php 
+                                $result = json_decode($_GET['upload_result'], true);
+                                if ($result && $result['success']): 
+                                    $task = $result['task'];
+                                ?>
+                                <div class="alert alert-success">
+                                    <h6>✅ 上传成功！</h6>
+                                    <p>文件：<strong><?php echo htmlspecialchars($task['filename']); ?></strong></p>
+                                    <p>正在后台处理中，请稍候刷新页面查看结果...</p>
+                                    <a href="admin.php?page=sku" class="btn btn-primary btn-sm">刷新页面</a>
                                 </div>
-                                <div class="col-4">
-                                    <button id="uploadSkuBtn" class="btn btn-primary w-100">开始上传</button>
+                            <?php else: ?>
+                                <div class="alert alert-danger">
+                                    ❌ <?php echo isset($result) ? $result['message'] : '上传失败'; ?>
                                 </div>
-                            </div>
+                            <?php endif; ?>
+                            <?php endif; ?>
+                            
+                            <form method="POST" action="admin.php?page=sku" enctype="multipart/form-data">
+                                <input type="hidden" name="action" value="upload_sku">
+                                <div class="row g-2">
+                                    <div class="col-8">
+                                        <input type="file" name="sku_file" accept=".csv,.xlsx,.xls" class="form-control" required>
+                                    </div>
+                                    <div class="col-4">
+                                        <button type="submit" class="btn btn-primary w-100">开始上传</button>
+                                    </div>
+                                </div>
+                            </form>
                             <div id="uploadStatus" class="mt-3" style="display:none;">
                                 <div class="alert alert-info">
                                     <i class="bi bi-hourglass-split me-2"></i>正在处理中，请稍候...
@@ -393,6 +678,20 @@ if (isset($_GET['api'])) {
                                     <button id="applyBatchBtn" class="btn btn-sm btn-success w-100">应用批量设置</button>
                                 </div>
                             </div>
+                            
+                            <!-- 搜索和筛选 -->
+                            <div class="row g-2 mb-3">
+                                <div class="col-6">
+                                    <input type="text" id="skuSearchInput" class="form-control form-control-sm" placeholder="搜索SKU或商品名...">
+                                </div>
+                                <div class="col-6">
+                                    <select id="categoryFilter" class="form-select form-select-sm">
+                                        <option value="">所有分类</option>
+                                        <option value="none">未分类</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
                             <div class="table-responsive">
                                 <table class="table table-hover">
                                     <thead><tr><th><input type="checkbox" id="selectAllSku"></th><th>SKU</th><th>商品名</th><th>分类</th><th>盘点频次</th><th>状态</th><th>操作</th></tr></thead>
@@ -472,62 +771,28 @@ if (isset($_GET['api'])) {
         // SKU维护相关函数
         let skuPollTimer = null;
 
-        // 上传SKU CSV文件
-        document.getElementById('uploadSkuBtn')?.addEventListener('click', async () => {
-            const fileInput = document.getElementById('skuFileInput');
-            if (!fileInput.files.length) {
-                alert('请选择CSV文件');
-                return;
-            }
-
-            const formData = new FormData();
-            formData.append('csv_file', fileInput.files[0]);
-
-            const statusDiv = document.getElementById('uploadStatus');
-            const resultDiv = document.getElementById('uploadResult');
-            statusDiv.style.display = 'block';
-            resultDiv.innerHTML = '';
-
+        // 轮询任务状态（检查后台处理进度）
+        async function checkTaskProgress() {
             try {
-                const res = await fetch('admin.php?api=upload_sku_csv', {
-                    method: 'POST',
-                    body: formData
-                });
+                const res = await fetch('admin.php?api=get_upload_tasks');
                 const d = await res.json();
 
-                if (d.success) {
-                    statusDiv.innerHTML = '<div class="alert alert-warning"><i class="bi bi-hourglass-split me-2"></i>AI正在努力整理中，请稍候...</div>';
-                    // 开始轮询任务状态
-                    pollTaskStatus(d.task_id);
-                } else {
-                    statusDiv.style.display = 'none';
-                    resultDiv.innerHTML = `<div class="alert alert-danger">${d.message}</div>`;
-                }
-            } catch (e) {
-                statusDiv.style.display = 'none';
-                resultDiv.innerHTML = '<div class="alert alert-danger">上传失败</div>';
-            }
-        });
-
-        // 轮询任务状态
-        async function pollTaskStatus(taskId) {
-            if (skuPollTimer) clearInterval(skuPollTimer);
-
-            skuPollTimer = setInterval(async () => {
-                try {
-                    const res = await fetch(`admin.php?api=get_task_result&task_id=${taskId}`);
-                    const d = await res.json();
-
-                    if (d.success && d.task.status !== 'pending' && d.task.status !== 'processing') {
-                        clearInterval(skuPollTimer);
-                        showTaskResult(d.task, d.result);
+                if (d.success && d.tasks.length > 0) {
+                    const latestTask = d.tasks[0];
+                    if (latestTask.status === 'completed' && document.getElementById('uploadResult').innerHTML === '') {
+                        showTaskResult(latestTask, JSON.parse(latestTask.result_data || '{}'));
                         loadUploadHistory();
                         loadSkuTodos();
                     }
-                } catch (e) {
-                    console.error('Poll error:', e);
                 }
-            }, 3000);
+            } catch (e) {
+                console.error('Check task error:', e);
+            }
+        }
+
+        // 页面加载时开始轮询任务进度
+        if (document.querySelector('[data-bs-target="#tab-sku"]')) {
+            setInterval(checkTaskProgress, 3000);
         }
 
         // 显示任务结果
@@ -597,8 +862,10 @@ if (isset($_GET['api'])) {
         async function loadSkuTodos(page = 1) {
             try {
                 const search = document.getElementById('skuSearchInput')?.value || '';
+                const categoryFilter = document.getElementById('categoryFilter')?.value || '';
                 let url = `admin.php?api=get_sku_todos&page=${page}`;
                 if (search) url += `&search=${encodeURIComponent(search)}`;
+                if (categoryFilter) url += `&category_filter=${encodeURIComponent(categoryFilter)}`;
 
                 const res = await fetch(url);
                 const d = await res.json();
@@ -612,9 +879,9 @@ if (isset($_GET['api'])) {
                             <td><input type="checkbox" class="sku-checkbox" data-id="${item.id}"></td>
                             <td><code>${item.sku}</code></td>
                             <td>${item.name}</td>
-                            <td><select class="form-select form-select-sm" onchange="updateSkuTodo(${item.id}, 'category', this.value)">
-                                ${categorySelect.replace(`value="${item.category_id}"`, `value="${item.category_id}" selected`)}
-                            </select></td>
+                            <td>
+                                <small class="text-muted">${item.category_name || '-'}</small>
+                            </td>
                             <td><select class="form-select form-select-sm" onchange="updateSkuTodo(${item.id}, 'cycle', this.value)">
                                 <option value="weekly" ${item.inventory_cycle === 'weekly' ? 'selected' : ''}>每周</option>
                                 <option value="monthly" ${item.inventory_cycle === 'monthly' ? 'selected' : ''}>每月</option>
@@ -706,8 +973,20 @@ if (isset($_GET['api'])) {
         // 切换到SKU维护标签时加载分类选项
         document.querySelector('[data-bs-target="#tab-sku"]')?.addEventListener('click', () => {
             loadCategoriesToSelect();
+            loadUploadCategories();
             loadSkuTodos();
             loadUploadHistory();
+        });
+
+        // 搜索和筛选监听器
+        let searchTimer = null;
+        document.getElementById('skuSearchInput')?.addEventListener('input', () => {
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(() => loadSkuTodos(1), 300);
+        });
+        
+        document.getElementById('categoryFilter')?.addEventListener('change', () => {
+            loadSkuTodos(1);
         });
 
         // 加载分类到下拉框
@@ -725,6 +1004,31 @@ if (isset($_GET['api'])) {
                 }
             } catch (e) {
                 console.error('Load categories error:', e);
+            }
+        }
+
+        // 加载上传文件中的分类到筛选框
+        async function loadUploadCategories() {
+            try {
+                const res = await fetch('admin.php?api=get_upload_categories');
+                const d = await res.json();
+
+                if (d.success && d.categories.length > 0) {
+                    const select = document.getElementById('categoryFilter');
+                    if (select) {
+                        // 保留"所有分类"和"未分类"选项
+                        select.innerHTML = '<option value="">所有分类</option><option value="none">未分类</option>';
+                        // 添加上传文件中的分类
+                        d.categories.forEach(cat => {
+                            const option = document.createElement('option');
+                            option.value = cat;
+                            option.textContent = cat;
+                            select.appendChild(option);
+                        });
+                    }
+                }
+            } catch (e) {
+                console.error('Load upload categories error:', e);
             }
         }
     </script>
