@@ -99,6 +99,26 @@ if (isset($_GET['api'])) {
 
     checkAuth();
     
+    if ($action === 'search_products') {
+        $q = trim($_GET['q'] ?? '');
+        if ($q === '') {
+            echo json_encode(['success' => true, 'data' => []]);
+            exit;
+        }
+        // 模糊搜索：SKU 或 品名
+        $like = '%' . $q . '%';
+        $stmt = $conn->prepare("SELECT id, sku, name FROM products WHERE sku LIKE ? OR name LIKE ? ORDER BY id DESC LIMIT 20");
+        $stmt->bind_param('ss', $like, $like);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        $list = [];
+        while ($row = $res->fetch_assoc()) {
+            $list[] = $row;
+        }
+        echo json_encode(['success' => true, 'data' => $list]);
+        exit;
+    }
+
     if ($action === 'get_product') {
         $sku = $_GET['sku'] ?? '';
         $stmt = $conn->prepare("SELECT p.*, c.rule as category_rule FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.sku = ? LIMIT 1");
@@ -379,6 +399,18 @@ if (isset($_GET['api'])) {
                 <i class="bi bi-qr-code-scan d-block h1"></i>
                 <span class="fw-bold">点击添加 (扫一扫)</span>
             </div>
+
+            <!-- 手动输入 / 模糊搜索（扫码失败备用） -->
+            <div class="custom-card mb-3">
+                <div class="fw-bold mb-2">手动输入 / 模糊搜索</div>
+                <div class="input-group">
+                    <input id="manualSearchInput" class="form-control" placeholder="输入SKU片段或品名关键词…">
+                    <button id="manualSearchBtn" class="btn btn-outline-primary" type="button">搜索</button>
+                </div>
+                <div id="manualSearchResults" class="mt-2"></div>
+                <div class="text-muted small mt-2">提示：也可以直接粘贴整段二维码内容（包含 #）再搜索。</div>
+            </div>
+
             <div id="pendingList"></div>
             <div class="d-grid mt-3">
                 <button class="btn btn-primary btn-lg shadow fw-bold" 
@@ -498,6 +530,15 @@ if (isset($_GET['api'])) {
                 document.getElementById('scanOverlay').style.display='none'; 
             });
             document.getElementById('addBatchBtn')?.addEventListener('click', ()=>addBatchRow());
+
+            // 手动输入 / 模糊搜索
+            document.getElementById('manualSearchBtn')?.addEventListener('click', ()=>manualSearch());
+            document.getElementById('manualSearchInput')?.addEventListener('keydown', (e)=>{
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    manualSearch();
+                }
+            });
             document.getElementById('confirmEntryBtn')?.addEventListener('click', ()=>{
                 const batches = []; 
                 document.querySelectorAll('.batch-row').forEach(r=>{ 
@@ -601,6 +642,46 @@ if (isset($_GET['api'])) {
                 sel.innerHTML += `<option value="${c.id}">${c.name}</option>`;
             });
         }
+        async function manualSearch() {
+            const q = (document.getElementById('manualSearchInput')?.value || '').trim();
+            const box = document.getElementById('manualSearchResults');
+            if (!box) return;
+            box.innerHTML = '';
+            if (!q) {
+                showAlert('请输入SKU片段或品名关键词', 'warning');
+                return;
+            }
+
+            // 如果用户粘贴了整段二维码（包含#），直接走录入流程
+            if (q.includes('#')) {
+                searchSKU(q);
+                return;
+            }
+
+            const res = await fetch('index.php?api=search_products&q=' + encodeURIComponent(q));
+            const d = await res.json();
+            if (!d.success) {
+                showAlert(d.message || '搜索失败', 'danger');
+                return;
+            }
+            if (!d.data || d.data.length === 0) {
+                showAlert('没搜到匹配项', 'warning');
+                return;
+            }
+
+            const list = document.createElement('div');
+            list.className = 'list-group mt-2';
+            d.data.forEach((item) => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'list-group-item list-group-item-action';
+                btn.innerHTML = `<div class="fw-bold">${item.name || '(未命名)'}</div><div class="small text-muted">${item.sku}</div>`;
+                btn.addEventListener('click', () => searchSKU(item.sku));
+                list.appendChild(btn);
+            });
+            box.appendChild(list);
+        }
+
         function updatePendingList() {
             const div = document.getElementById('pendingList');
             const btn = document.getElementById('submitSessionBtn');
