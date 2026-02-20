@@ -14,7 +14,7 @@ header('Content-Type: application/json; charset=utf-8');
 
 // CORS支持（如果需要）
 header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: GET, POST');
+header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE');
 header('Access-Control-Allow-Headers: Authorization, Content-Type');
 
 // 处理OPTIONS预检请求
@@ -32,12 +32,19 @@ function validateApiKey($apiKey) {
         return false;
     }
 
-    $stmt = $conn->prepare("SELECT id, name, is_active FROM api_keys WHERE api_key = ? AND is_active = 1");
-    $stmt->bind_param("s", $apiKey);
+    $apiKeyHash = hash('sha256', $apiKey);
+
+    $stmt = $conn->prepare("SELECT id, name, is_active, scopes, expires_at FROM api_keys WHERE api_key_hash = ? AND is_active = 1");
+    $stmt->bind_param("s", $apiKeyHash);
     $stmt->execute();
     $result = $stmt->get_result();
 
     if ($row = $result->fetch_assoc()) {
+        // 检查是否已过期
+        if (!empty($row['expires_at']) && strtotime($row['expires_at']) < time()) {
+            return false;
+        }
+
         // 更新最后使用时间
         $updateStmt = $conn->prepare("UPDATE api_keys SET last_used_at = NOW() WHERE id = ?");
         $updateStmt->bind_param("i", $row['id']);

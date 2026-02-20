@@ -451,10 +451,11 @@ if (isset($_GET['api'])) {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         let html5QrCode = null, currentSessionId = 'S'+Date.now(), pendingData = [];
-        function switchView(v) { 
-            document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active')); 
-            document.getElementById(v+'View').classList.add('active'); 
-            if(v==='past') loadPast(); 
+        function switchView(v) {
+            document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
+            document.getElementById(v+'View').classList.add('active');
+            if(v==='past') loadPast();
+            if(v==='new') loadCats();  // 切换到新增盘点视图时加载分类
         }
         function showAlert(m, t='info') { 
             const el = document.createElement('div'); 
@@ -536,37 +537,55 @@ if (isset($_GET['api'])) {
             });
         });
         async function searchSKU(sku) {
-            const res = await fetch('index.php?api=get_product&sku='+sku); 
+            const res = await fetch('index.php?api=get_product&sku='+sku);
             const d = await res.json();
-            document.getElementById('productForm').reset(); 
+            document.getElementById('productForm').reset();
             document.getElementById('batchesContainer').innerHTML='';
-            document.getElementById('sku').value = sku; 
+            document.getElementById('sku').value = sku;
             const fields = ['categoryId','productName','removalBuffer'];
-            if(d.exists) {
-                document.getElementById('productName').value=d.product.name; 
-                document.getElementById('categoryId').value=d.product.category_id; 
-                document.getElementById('removalBuffer').value=d.product.removal_buffer;
-                fields.forEach(f => { 
-                    document.getElementById(f).readOnly=true; 
-                    if(document.getElementById(f).tagName==='SELECT') 
-                        document.getElementById(f).disabled=true; 
-                });
-            } else { 
-                fields.forEach(f => { 
-                    document.getElementById(f).readOnly=false; 
-                    if(document.getElementById(f).tagName==='SELECT') 
-                        document.getElementById(f).disabled=false; 
-                }); 
+
+            // 解析二维码日期格式
+            let expiryDateFromQR = null;
+            if (sku.includes('#')) {
+                const parts = sku.split('#');
+                if (parts.length >= 3) {
+                    // 格式: 00 + SKU + 生产日期 + 到期日期
+                    // 或: SKU + 生产日期 + 到期日期
+                    let expiryPart = parts[parts.length - 1]; // 最后一个是到期日期
+                    if (expiryPart.length === 8 && /^\d+$/.test(expiryPart)) {
+                        const year = expiryPart.substring(0, 4);
+                        const month = expiryPart.substring(4, 6);
+                        const day = expiryPart.substring(6, 8);
+                        expiryDateFromQR = `${year}-${month}-${day}`;
+                    }
+                }
             }
-            addBatchRow();
+
+            if(d.exists) {
+                document.getElementById('productName').value=d.product.name;
+                document.getElementById('categoryId').value=d.product.category_id;
+                document.getElementById('removalBuffer').value=d.product.removal_buffer;
+                fields.forEach(f => {
+                    document.getElementById(f).readOnly=true;
+                    if(document.getElementById(f).tagName==='SELECT')
+                        document.getElementById(f).disabled=true;
+                });
+            } else {
+                fields.forEach(f => {
+                    document.getElementById(f).readOnly=false;
+                    if(document.getElementById(f).tagName==='SELECT')
+                        document.getElementById(f).disabled=false;
+                });
+            }
+            addBatchRow(expiryDateFromQR);
             new bootstrap.Modal(document.getElementById('entryModal')).show();
         }
-        function addBatchRow() {
+        function addBatchRow(defaultExpiryDate = null) {
             const row = document.createElement('div');
             row.className = 'batch-row input-group input-group-sm mb-2';
             row.innerHTML = `
                 <span class="input-group-text">效期</span>
-                <input type="date" class="form-control e-in" required>
+                <input type="date" class="form-control e-in" ${defaultExpiryDate ? `value="${defaultExpiryDate}"` : ''} required>
                 <span class="input-group-text">数</span>
                 <input type="number" class="form-control q-in" placeholder="数量" required>
                 <button class="btn btn-outline-danger" onclick="this.parentElement.remove()">×</button>
