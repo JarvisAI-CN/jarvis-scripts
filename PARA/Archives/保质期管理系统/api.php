@@ -83,24 +83,40 @@ function getApiKeyFromHeader() {
 // 主程序
 // ========================================
 
-// 获取API密钥
-$apiKey = getApiKeyFromHeader();
+// 获取请求的endpoint
+$endpoint = $_GET['endpoint'] ?? '';
 
-if (empty($apiKey)) {
-    jsonResponse([
-        'success' => false,
-        'message' => '缺少API密钥'
-    ], 401);
-}
+// 特殊处理：categories endpoint 允许已登录用户访问（不需要API密钥）
+if ($endpoint === 'categories') {
+    session_start();
+    if (!isset($_SESSION['user_id'])) {
+        jsonResponse([
+            'success' => false,
+            'message' => '需要登录'
+        ], 401);
+    }
+    // 已登录用户，跳过API密钥验证
+    $keyInfo = ['id' => $_SESSION['user_id'], 'name' => 'internal_user'];
+} else {
+    // 其他endpoint需要API密钥
+    $apiKey = getApiKeyFromHeader();
 
-// 验证API密钥
-$keyInfo = validateApiKey($apiKey);
+    if (empty($apiKey)) {
+        jsonResponse([
+            'success' => false,
+            'message' => '缺少API密钥'
+        ], 401);
+    }
 
-if (!$keyInfo) {
-    jsonResponse([
-        'success' => false,
-        'message' => 'API密钥无效或已禁用'
-    ], 403);
+    // 验证API密钥
+    $keyInfo = validateApiKey($apiKey);
+
+    if (!$keyInfo) {
+        jsonResponse([
+            'success' => false,
+            'message' => 'API密钥无效或已禁用'
+        ], 403);
+    }
 }
 
 // 获取请求的endpoint
@@ -367,7 +383,7 @@ function getCategoriesData() {
         'success' => true,
         'endpoint' => 'categories',
         'count' => count($categories),
-        'data' => $categories
+        'data' => $categories  // 保持向后兼容，返回 'data' 字段
     ];
 }
 
