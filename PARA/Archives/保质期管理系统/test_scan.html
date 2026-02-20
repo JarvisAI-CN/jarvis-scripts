@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>扫码测试</title>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+</head>
+<body>
+    <h1>扫码测试</h1>
+    <div id="reader" style="width: 300px;"></div>
+    <div id="result" style="margin-top: 20px; padding: 10px; background: #f0f0f0;"></div>
+
+    <button onclick="startScan()">开始扫码</button>
+    <button onclick="stopScan()">停止扫码</button>
+
+    <script>
+        let html5QrCode = null;
+
+        function startScan() {
+            html5QrCode = new Html5Qrcode("reader");
+            html5QrCode.start(
+                {facingMode: "environment"},
+                {fps: 10, qrbox: {width: 250, height: 250}},
+                (decodedText, decodedResult) => {
+                    document.getElementById('result').innerHTML =
+                        '<strong>扫码内容:</strong><br>' +
+                        'Text: ' + decodedText + '<br>' +
+                        'Format: ' + decodedResult.result.format.formatName + '<br><br>' +
+                        '<strong>解析测试:</strong><br>' +
+                        '包含artwork.starbucks: ' + decodedText.includes('artwork.starbucks') + '<br>' +
+                        '包含#: ' + decodedText.includes('#') + '<br>' +
+                        '长度: ' + decodedText.length;
+
+                    console.log('扫码结果:', decodedText);
+                    console.log('详细信息:', decodedResult);
+
+                    // 扫码后不自动停止，方便测试
+                },
+                (errorMessage) => {
+                    // 扫描失败，忽略
+                }
+            ).catch(err => {
+                console.error('启动失败:', err);
+            });
+        }
+
+        function stopScan() {
+            if (html5QrCode) {
+                html5QrCode.stop();
+            }
+        }
+    </script>
+</body>
+</html>
