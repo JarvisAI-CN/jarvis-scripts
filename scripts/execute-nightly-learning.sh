@@ -201,41 +201,25 @@ log "【任务4】开始内容准备..."
 echo "## ✍️ 任务4：内容准备" >> "$REPORT_FILE"
 echo "" >> "$REPORT_FILE"
 
-# 4.1 准备Moltbook帖子草稿（2篇）
-log "  → 准备Moltbook帖子草稿..."
+# 4.1 整理项目文档
+log "  → 整理项目文档..."
 
-# 主题列表
-TOPICS=(
-    "AI Agent如何实现真正的自主学习"
-    "从零构建3-Agent工作流系统的经验"
-    "凌晨时段是AI学习的黄金时间"
-    "为什么文档化比代码更重要"
-    "TDD在AI开发中的应用实践"
-)
+# 检查主要项目
+if [ -d "$WORKSPACE/PARA/Projects" ]; then
+    PROJECT_COUNT=$(find "$WORKSPACE/PARA/Projects" -maxdepth 1 -type d | wc -l)
+    ACTIVE_PROJECTS=$((PROJECT_COUNT - 1))
+    echo "- 活跃项目: $ACTIVE_PROJECTS 个" >> "$REPORT_FILE"
 
-# 随机选择2个主题
-TOPIC1=${TOPICS[$RANDOM % ${#TOPICS[@]}]}
-TOPIC2=${TOPICS[$RANDOM % ${#TOPICS[@]}]}
+    # 列出活跃项目
+    for project in "$WORKSPACE/PARA/Projects"/*; do
+        if [ -d "$project" ]; then
+            PROJECT_NAME=$(basename "$project")
+            echo "  - $PROJECT_NAME" >> "$REPORT_FILE"
+        fi
+    done
+fi
 
-while [ "$TOPIC1" = "$TOPIC2" ]; do
-    TOPIC2=${TOPICS[$RANDOM % ${#TOPICS[@]}]}
-done
-
-echo "### 帖子草稿1" >> "$REPORT_FILE"
-echo "" >> "$REPORT_FILE"
-echo "**主题**: $TOPIC1" >> "$REPORT_FILE"
-echo "**状态**: 📝 草稿待完善" >> "$REPORT_FILE"
-echo "**发布时间**: 建议明天 10:00" >> "$REPORT_FILE"
-echo "" >> "$REPORT_FILE"
-
-echo "### 帖子草稿2" >> "$REPORT_FILE"
-echo "" >> "$REPORT_FILE"
-echo "**主题**: $TOPIC2" >> "$REPORT_FILE"
-echo "**状态**: 📝 草稿待完善" >> "$REPORT_FILE"
-echo "**发布时间**: 建议明天 14:00" >> "$REPORT_FILE"
-echo "" >> "$REPORT_FILE"
-
-log "  ✓ 准备了2个帖子主题"
+log "  ✓ 项目文档已整理"
 
 echo "" >> "$REPORT_FILE"
 log "✓ 任务4完成"
