@@ -26,4 +26,11 @@
 
 ## 成果/交付物
 - GitHub 干净仓库（代码仓库）：JarvisAI-CN/expiry-management-system-clean
-- 已发布版本：v2.8.2 / v2.8.3 / v2.8.4 / v2.8.5 / v2.9.0
+- 已发布版本：v2.8.2 / v2.8.3 / v2.8.4 / v2.8.5 / v2.9.0 / v2.10.0 / v2.11.0 / v2.12.0 / v2.13.0 / v2.13.1
+
+## 相关笔记（Obsidian）
+- [[Zettelkasten/保质期管理系统开发日志]]
+- [[Zettelkasten/保质期管理系统API文档]]
+- [[Zettelkasten/保质期管理系统部署指南]]
+- [[Zettelkasten/保质期管理系统故障排查]]
+- [[Zettelkasten/保质期管理系统项目进度]]

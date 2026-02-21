@@ -299,23 +299,3 @@ node skills/agents-manager/scripts/health_check.js
 
 ---
 
-### 自建邮件网站项目 🚀
-**项目文件**: `/home/ubuntu/.openclaw/workspace/Zettelkasten/自建邮件网站项目.md`
-**域名**: mail.dhmip.cn（已解析）
-**技术栈**: PHP + Postfix + Dovecot + MySQL
-**执行时段**: 凌晨 01:00-05:00
-
-**项目目标**:
-- 创建完整的Web邮件系统
-- 用户注册/登录/收发邮件
-- SSL/TLS加密
-- 在VNC图形桌面测试
-
-**进度追踪**:
-- [ ] 环境准备（Postfix + Dovecot安装）
-- [ ] 基础配置
-- [ ] Web界面开发（PHP）
-- [ ] 安全加固（SSL/TLS）
-- [ ] 测试与优化
-
----
