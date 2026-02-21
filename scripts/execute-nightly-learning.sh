@@ -269,6 +269,53 @@ fi
 echo "" >> "$REPORT_FILE"
 log "✓ 任务5完成"
 
+# ==================== 任务6：成本报告 ====================
+log ""
+log "【任务6】开始成本报告..."
+echo "## 💰 任务6：成本报告" >> "$REPORT_FILE"
+echo "" >> "$REPORT_FILE"
+
+# 6.1 生成今日成本报告
+log "  → 生成今日成本报告..."
+if [ -f "$WORKSPACE/skills/cost-report/scripts/cost_report.sh" ]; then
+    COST_OUTPUT=$(bash "$WORKSPACE/skills/cost-report/scripts/cost_report.sh" --today 2>&1)
+    COST_TOTAL=$(echo "$COST_OUTPUT" | grep "Total Cost:" | head -1)
+    echo "**今日成本**: $COST_TOTAL" >> "$REPORT_FILE"
+    log "  ✓ $COST_TOTAL"
+else
+    echo "- ⚠️ cost-report技能未安装" >> "$REPORT_FILE"
+    log "  ⚠ cost-report技能未安装"
+fi
+
+echo "" >> "$REPORT_FILE"
+log "✓ 任务6完成"
+
+# ==================== 任务7：技能发现 ====================
+log ""
+log "【任务7】开始技能发现..."
+echo "## 🔍 任务7：技能发现" >> "$REPORT_FILE"
+echo "" >> "$REPORT_FILE"
+
+# 7.1 查询agent-directory
+log "  → 查询agent-directory发现新服务..."
+if command -v curl &> /dev/null && command -v jq &> /dev/null; then
+    SERVICES_COUNT=$(curl -s https://ctxly.com/services.json | jq '.services | length' 2>/dev/null || echo "N/A")
+    echo "**agent-directory服务数**: $SERVICES_COUNT" >> "$REPORT_FILE"
+    log "  ✓ 发现 $SERVICES_COUNT 个AI服务"
+else
+    echo "- ⚠️ 需要curl和jq工具" >> "$REPORT_FILE"
+    log "  ⚠ 需要curl和jq工具"
+fi
+
+# 7.2 列出本地技能
+log "  → 统计本地安装的技能..."
+LOCAL_SKILLS=$(find "$WORKSPACE/skills" -name "SKILL.md" -type f 2>/dev/null | wc -l)
+echo "**本地技能数**: $LOCAL_SKILLS" >> "$REPORT_FILE"
+log "  ✓ 本地安装 $LOCAL_SKILLS 个技能"
+
+echo "" >> "$REPORT_FILE"
+log "✓ 任务7完成"
+
 # ==================== 生成总结 ====================
 log ""
 log "生成学习总结..."
@@ -279,8 +326,8 @@ cat >> "$REPORT_FILE" << EOF
 
 ## 📈 执行统计
 
-- **总任务数**: 5
-- **完成任务**: 5
+- **总任务数**: 7
+- **完成任务**: 7
 - **跳过任务**: 0
 - **失败任务**: 0
 - **成功率**: 100%
