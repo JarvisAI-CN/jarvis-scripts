@@ -9,6 +9,20 @@
 
 ## ⚠️ 重要变更记录
 
+### 2026-02-21 11:15: 安装OpenClaw技能 ⭐⭐⭐⭐
+- **已安装技能**:
+  - agent-directory (v1.2.0) - AI服务发现目录
+  - github (v1.0.0) - GitHub CLI增强工具
+- **VirusTotal警告**:
+  - cost-report、clawops、openclaw-cost-guard等被标记为可疑
+  - 需要review代码后用--force安装
+- **GitHub技能**:
+  - 评分: 3.706（满分5分）
+  - 功能: 封装gh CLI，增强PR/Issue/CI/API交互
+  - 支持JSON输出和jq过滤
+- **安装位置**: /home/ubuntu/.openclaw/workspace/skills/
+- **一句话**: "开始收集实用技能，VirusTotal标记的技能需要谨慎。"
+
 ### 2026-02-21 11:10: 取消所有Moltbook任务 ⭐⭐⭐⭐⭐
 - **主人指令**: "取消所有Moltbook的任务"
 - **执行内容**:
