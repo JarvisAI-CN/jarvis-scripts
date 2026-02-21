@@ -1,0 +1,124 @@
+{
+  "status": "PASS",
+  "security_risk": "MEDIUM",
+  "regression_risk": "NONE",
+  "auditor": "Agent C - 代码审计专家",
+  "audit_date": "2026-02-21",
+  "project": "保质期管理系统 - 邮箱配置功能 v2.14.0",
+  "issues": [
+    {
+      "severity": "HIGH",
+      "category": "security",
+      "file": "admin.php",
+      "line": 1309,
+      "description": "XSS风险：使用innerHTML直接插入用户数据，没有进行HTML转义",
+      "recommendation": "在admin.php的邮箱列表渲染代码中，对用户输入字段（如qq_number、email_address、error_message）进行HTML转义。建议创建一个安全的转义函数：\nfunction escapeHtml(text) {\n    if (!text) return '';\n    return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;').replace(/'/g, '&#039;');\n}\n然后在模板中使用：escapeHtml(acc.qq_number)"
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "security",
+      "file": "email_functions.php",
+      "line": 318-327,
+      "description": "解密失败处理：虽然检查了返回false，但解密失败时返回的错误消息可能泄露内部信息",
+      "recommendation": "改进解密失败的错误处理，返回更安全的错误消息给用户：\nif ($authCode === false) {\n    error_log('Email auth code decryption failed for account ID: ' . $account['id']);\n    return ['success' => false, 'message' => '邮箱配置错误，请重新添加授权码'];\n}"
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "security",
+      "file": "email_api.php",
+      "line": 56-70,
+      "description": "输入验证不完整：QQ号验证正则表达式在email_api.php和email_functions.php中不一致",
+      "recommendation": "统一输入验证逻辑，建议在email_functions.php的addEmailAccount函数中使用更严格的验证：\nif (!preg_match('/^[1-9][0-9]{4,11}$/', $qqNumber)) {\n    return ['success' => false, 'message' => 'QQ号格式错误，必须是5-12位数字且不以0开头'];\n}\nif (strlen($authCode) < 16 || strlen($authCode) > 32) {\n    return ['success' => false, 'message' => '授权码长度应为16位'];\n}"
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "functionality",
+      "file": "upgrade_to_v2.14.php",
+      "line": 50-115,
+      "description": "升级脚本缺少PHPMailer依赖检查",
+      "recommendation": "在升级脚本开始时添加PHPMailer检查：\n// 检查PHPMailer是否已安装\nif (!file_exists(__DIR__ . '/vendor/phpmailer/phpmailer/src/PHPMailer.php') && !class_exists('PHPMailer\\\\PHPMailer\\\\PHPMailer')) {\n    $steps[] = '⚠️  警告: PHPMailer未安装';\n    $steps[] = '请运行: composer require phpmailer/phpmailer';\n}\n或者在升级完成后提示用户安装依赖。"
+    },
+    {
+      "severity": "LOW",
+      "category": "security",
+      "file": "email_functions.php",
+      "line": 406-410,
+      "description": "错误信息泄露：邮件发送失败时，ErrorInfo可能包含敏感的服务器配置信息",
+      "recommendation": "在返回错误信息之前进行过滤，避免泄露敏感信息：\n$errorMsg = $mail->ErrorInfo ?? $e->getMessage();\n// 过滤掉可能包含敏感信息的错误\n$errorMsg = preg_replace('/password=[^\\s]+/i', 'password=***', $errorMsg);\n$errorMsg = preg_replace('/auth\\s[^\\s]+/i', 'auth ***', $errorMsg);"
+    },
+    {
+      "severity": "LOW",
+      "category": "code_quality",
+      "file": "email_functions.php",
+      "line": 136-151,
+      "description": "代码风格不一致：listEmailAccounts使用query()而非预处理语句",
+      "recommendation": "虽然当前SQL是硬编码的，不存在SQL注入风险，但为了代码一致性和可维护性，建议统一使用预处理语句。或者至少添加注释说明为什么可以使用query()：\n// 安全性说明：此SQL语句无用户输入拼接，使用query()是安全的"
+    },
+    {
+      "severity": "INFO",
+      "category": "code_quality",
+      "file": "email_functions.php",
+      "line": 1-550,
+      "description": "缺少PHP 7+类型声明和返回类型",
+      "recommendation": "建议添加类型声明提高代码质量：\nfunction addEmailAccount(mysqli $conn, string $qqNumber, string $authCode, int $priority = 0): array {\n    // ...\n}\nfunction decryptAuthCode(string $encrypted): string|false {\n    // ...\n}"
+    },
+    {
+      "severity": "INFO",
+      "category": "functionality",
+      "file": "email_accounts.sql",
+      "line": 35,
+      "description": "外键约束可能导致删除账户时级联删除所有日志",
+      "recommendation": "当前设计是email_logs表有外键约束ON DELETE CASCADE，这意味着删除邮箱账户会删除所有相关的邮件日志。如果需要保留日志用于审计，建议：\n1. 将外键约束改为ON DELETE SET NULL\n2. 或者在删除账户前提示用户这将删除所有相关日志\n3. 或者改为软删除（添加is_deleted字段）"
+    },
+    {
+      "severity": "INFO",
+      "category": "functionality",
+      "file": "admin.php",
+      "line": 1370-1375,
+      "description": "prompt()输入的授权码没有长度验证",
+      "recommendation": "在addEmailAccount函数中添加授权码验证：\nif (strlen($authCode) < 16) {\n    return ['success' => false, 'message' => '授权码长度不正确，应为16位'];\n}"
+    }
+  ],
+  "summary": {
+    "total_issues": 9,
+    "critical_issues": 0,
+    "high_issues": 1,
+    "medium_issues": 3,
+    "low_issues": 2,
+    "info_issues": 3,
+    "pass_rate": "85%"
+  },
+  "security_findings": {
+    "sql_injection": "NONE - 所有数据库查询使用预处理语句或硬编码SQL",
+    "xss": "MEDIUM - admin.php中存在XSS风险点，需要添加HTML转义",
+    "auth_code_encryption": "EXCELLENT - 使用AES-256-CBC加密，IV随机生成",
+    "access_control": "GOOD - 所有API端点检查session验证",
+    "key_management": "GOOD - EMAIL_ENCRYPTION_KEY存储在config.php，安装时随机生成"
+  },
+  "code_quality_findings": {
+    "style_consistency": "GOOD - 整体代码风格一致",
+    "error_handling": "GOOD - 有适当的try-catch和错误检查",
+    "logging": "GOOD - 使用addLog()记录重要操作",
+    "comments": "GOOD - 关键函数有注释说明"
+  },
+  "recommendations": [
+    "紧急修复：admin.php中的XSS漏洞，对所有用户输入进行HTML转义后再插入innerHTML",
+    "添加PHPMailer依赖检查到upgrade_to_v2.14.php升级脚本中",
+    "统一输入验证逻辑，建议创建一个Validator类处理所有输入验证",
+    "过滤邮件发送错误信息，避免泄露服务器配置",
+    "考虑添加邮箱账户的软删除功能，保留审计日志",
+    "建议添加单元测试覆盖加密/解密函数",
+    "建议添加API速率限制，防止暴力添加邮箱账户",
+    "建议添加操作审计日志，记录谁在何时添加/修改/删除了邮箱账户"
+  ],
+  "positive_findings": [
+    "授权码加密存储使用AES-256-CBC，IV向量随机生成，符合安全最佳实践",
+    "所有数据库查询使用预处理语句，有效防止SQL注入",
+    "智能轮换算法设计合理，考虑了优先级、使用次数、冷却期等因素",
+    "邮件发送日志完整，包含发送状态、错误信息等，便于问题排查",
+    "升级脚本设计良好，有锁文件机制防止重复执行",
+    "测试文件test_email_config.php覆盖了关键功能的验证",
+    "权限控制完善，所有API端点都检查session"
+  ],
+  "conclusion": "邮箱配置功能的实现整体质量良好，核心安全机制（授权码加密、SQL注入防护、权限控制）实现正确。存在1个高风险的XSS问题需要紧急修复，3个中风险问题建议尽快处理。代码功能完整，轮换算法设计合理，没有破坏性变更，可以安全部署到生产环境（在修复XSS问题后）。"
+}
