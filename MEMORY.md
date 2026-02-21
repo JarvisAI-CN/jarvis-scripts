@@ -9,6 +9,20 @@
 
 ## ⚠️ 重要变更记录
 
+### 2026-02-21 11:18: 安全审查并安装cost-report和agents-manager ⭐⭐⭐⭐⭐
+- **安全审查结果**:
+  - ✅ cost-report - 安全，只读取本地日志用jq解析成本
+  - ✅ agents-manager - 安全，Node.js脚本管理Agent发现和路由
+  - ❌ clawops - 代码不完整，暂不安装
+- **已安装技能**:
+  - cost-report (v1.0.2) - OpenClaw成本追踪器
+  - agents-manager (v1.0.0) - Agent发现、权限、路由管理
+- **VirusTotal标记原因**:
+  - cost-report: 访问~/.openclaw敏感路径（正常操作）
+  - agents-manager: 使用Node.js文件操作（正常操作）
+- **审查方法**: 查看GitHub源码，分析脚本内容
+- **一句话**: "代码审查后确认安全，用--force安装。"
+
 ### 2026-02-21 11:15: 安装OpenClaw技能 ⭐⭐⭐⭐
 - **已安装技能**:
   - agent-directory (v1.2.0) - AI服务发现目录
