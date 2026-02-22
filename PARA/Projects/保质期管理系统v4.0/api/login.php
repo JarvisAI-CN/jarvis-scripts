@@ -4,9 +4,9 @@
  * 用户身份验证接口
  */
 
-require_once __DIR__ . '/../includes/config.php';
-require_once __DIR__ . '/../includes/functions.php';
-require_once __DIR__ . '/../includes/check_auth.php';
+require_once __DIR__ . '/includes/config.php';
+require_once __DIR__ . '/includes/functions.php';
+require_once __DIR__ . '/includes/check_auth.php';
 
 // 设置CORS头部
 header('Access-Control-Allow-Origin: *');

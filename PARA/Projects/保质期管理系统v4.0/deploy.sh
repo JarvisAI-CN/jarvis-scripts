@@ -51,6 +51,7 @@ LOCAL_DIR = "/home/ubuntu/.openclaw/workspace/PARA/Projects/保质期管理系�
 
 # 需要上传的文件和目录
 FILES_TO_UPLOAD = [
+    'index.php',
     'api/',
     'includes/',
     'pages/',
