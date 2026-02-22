@@ -502,3 +502,37 @@ requireAuth('admin');
 ---
 
 *让保质期管理变得简单高效！* 🚀
+
+## 2026-02-22 NAS OpenClaw修复成功
+
+**完成时间**: 2026-02-22 22:05
+
+**任务**: 修复NAS上OpenClaw Gateway罢工问题
+
+**问题诊断**:
+- **根本原因**: 启动脚本使用了`npx`命令，但NAS系统PATH中未包含`npx`路径
+- **故障现象**: OpenClaw进程未运行，端口18789未监听
+
+**修复内容**:
+1. **手动启动**: 使用`npm exec openclaw gateway`成功启动
+2. **脚本修复**: 更新启动脚本，修复PATH配置，添加启动检查和验证
+3. **备份保存**: 保存原始脚本为`start-openclaw.sh.backup.20260222_2205`
+
+**验证结果**:
+- ✅ openclaw进程运行正常（PID 6344）
+- ✅ openclaw-gateway进程运行正常（PID 6378）
+- ✅ 端口18789正常监听
+- ✅ Web界面响应正常（http://127.0.0.1:18789）
+
+**文件更新**:
+- ✅ `~/start-openclaw.sh` - 已更新为修复版本
+- ✅ 修复报告: `NAS_OPENCLAW_FIX_REPORT_20260222.md`
+
+**技术要点**:
+- PATH修复: 添加Node.js v22的npm bin路径
+- 启动检查: 避免重复启动
+- 启动验证: 确认进程成功运行
+- 使用nohup: 确保后台运行
+
+---
+
