@@ -10,7 +10,7 @@ FTP_SERVER="211.154.19.189"
 FTP_USER="pandian"
 FTP_PASS="pandian"
 FTP_PORT="21"
-REMOTE_DIR="www/wwwroot/pandian.dhmip.cn/public_html"
+REMOTE_DIR="www/wwwroot/pandian.dhmip.cn"
 LOCAL_DIR="/home/ubuntu/.openclaw/workspace/PARA/Projects/保质期管理系统v4.0"
 
 # 颜色输出
@@ -44,7 +44,7 @@ FTP_SERVER = "211.154.19.189"
 FTP_PORT = 21
 FTP_USER = "pandian"
 FTP_PASS = "pandian"
-REMOTE_DIR = "www/wwwroot/pandian.dhmip.cn/public_html"
+REMOTE_DIR = "/"
 LOCAL_DIR = "/home/ubuntu/.openclaw/workspace/PARA/Projects/保质期管理系统v4.0"
 
 def upload_file(ftp, local_path, remote_file):
@@ -99,7 +99,7 @@ def main():
         # 上传API目录
         if os.path.exists(os.path.join(LOCAL_DIR, "api")):
             if ensure_dir(ftp, "api"):
-                api_files = ["login.php", "overview.php", "logout.php"]
+                api_files = ["login.php", "overview.php", "logout.php", "get_product.php", "submit-inventory.php"]
                 for filename in api_files:
                     local_path = os.path.join(LOCAL_DIR, "api", filename)
                     if os.path.exists(local_path):
