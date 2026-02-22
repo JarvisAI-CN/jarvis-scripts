@@ -313,30 +313,117 @@ function resetScanner() {
     `;
 }
 
-function handleScanResult(sku, productName) {
-    // 处理扫描结果
-    const pendingList = document.getElementById('pendingList');
-    const existingItem = Array.from(pendingList.children).find(child => 
-        child.dataset.sku === sku
-    );
+function handleScanResult(qrCode) {
+    console.log('扫码结果:', qrCode);
     
-    if (existingItem) {
-        // 如果商品已存在，增加数量
-        const quantityElement = existingItem.querySelector('.product-quantity');
-        const current = parseInt(quantityElement.textContent);
-        quantityElement.textContent = current + 1;
-        
-        showAlert('商品数量已更新', 'info');
-    } else {
-        // 添加新商品
-        const newItem = createProductItem(sku, productName);
-        pendingList.appendChild(newItem);
-        
-        showAlert(`商品已添加: ${productName}`, 'success');
+    // 解析二维码数据
+    let sku = '';
+    let expiryDateFromQR = null;
+
+    // 格式1: 星巴克URL格式
+    if (qrCode.includes('artwork.starbucks.com.cn')) {
+        try {
+            const url = new URL(qrCode);
+            const pathParts = url.pathname.split('/');
+            const ciiIndex = pathParts.indexOf('cii1');
+
+            if (ciiIndex !== -1 && ciiIndex + 1 < pathParts.length) {
+                let ciiData = pathParts[ciiIndex + 1];
+
+                const ampParts = ciiData.split('&');
+                ciiData = ampParts[0];
+
+                const lastPart = ampParts[ampParts.length - 1];
+                if (lastPart.length === 8 && /^\d+$/.test(lastPart)) {
+                    const year = lastPart.substring(0, 4);
+                    const month = lastPart.substring(4, 6);
+                    const day = lastPart.substring(6, 8);
+                    expiryDateFromQR = `${year}-${month}-${day}`;
+                }
+
+                if (ciiData.startsWith('00')) {
+                    ciiData = ciiData.substring(2);
+                }
+
+                if (ciiData.length >= 8) {
+                    sku = ciiData.substring(0, 8);
+                }
+
+                console.log('星巴克URL解析:', { sku, expiryDate: expiryDateFromQR });
+            }
+        } catch (e) {
+            console.error('解析星巴克URL失败:', e);
+        }
+    }
+    // 格式2: 纯数字格式
+    else if (qrCode.includes('#')) {
+        const parts = qrCode.split('#');
+        if (parts.length >= 3) {
+            let part1 = parts[0];
+
+            if (part1.startsWith('00')) {
+                part1 = part1.substring(2);
+            }
+
+            if (part1.length >= 8) {
+                sku = part1.substring(0, 8);
+            }
+
+            let expiryDatePart = parts[2];
+            if (expiryDatePart.length === 8 && /^\d+$/.test(expiryDatePart)) {
+                const year = expiryDatePart.substring(0, 4);
+                const month = expiryDatePart.substring(4, 6);
+                const day = expiryDatePart.substring(6, 8);
+                expiryDateFromQR = `${year}-${month}-${day}`;
+            }
+
+            console.log('纯数字格式解析:', { sku, expiryDate: expiryDateFromQR });
+        }
+    }
+    // 格式3: 纯SKU格式
+    else {
+        sku = qrCode.trim();
+        console.log('纯SKU格式:', { sku });
     }
     
-    // 更新计数
-    updateProductCount();
+    // 查询商品信息
+    fetch(`/api/get_product.php?sku=${encodeURIComponent(sku)}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.exists) {
+                // 商品存在，继续处理
+                const productName = data.product.name;
+                
+                const pendingList = document.getElementById('pendingList');
+                const existingItem = Array.from(pendingList.children).find(child => 
+                    child.dataset.sku === sku
+                );
+                
+                if (existingItem) {
+                    // 如果商品已存在，增加数量
+                    const quantityElement = existingItem.querySelector('.product-quantity');
+                    const current = parseInt(quantityElement.textContent);
+                    quantityElement.textContent = current + 1;
+                    
+                    showAlert('商品数量已更新', 'info');
+                } else {
+                    // 添加新商品
+                    const newItem = createProductItem(sku, productName);
+                    pendingList.appendChild(newItem);
+                    
+                    showAlert(`商品已添加: ${productName}`, 'success');
+                }
+                
+                updateProductCount();
+            } else {
+                // 商品不存在，提示用户
+                showAlert(`未找到商品: ${sku}`, 'warning');
+            }
+        })
+        .catch(error => {
+            console.error('查询商品信息失败:', error);
+            showAlert('查询商品信息失败', 'error');
+        });
 }
 
 function createProductItem(sku, productName) {

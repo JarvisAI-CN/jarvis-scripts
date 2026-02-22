@@ -1,5 +1,39 @@
 
 
+## 2026-02-22 保质期管理系统v4.0扫码识别功能实现
+
+**完成时间**: 2026-02-22 21:35
+
+**任务**: 实现物料扫码识别功能
+
+**完成内容**:
+1. **识别逻辑分析**：
+   - 在 `expiry-clean/index.php` 第 2363 行找到 `searchSKU` 函数
+   - 支持三种二维码格式：
+     - 星巴克URL格式：`https://artwork.starbucks.com.cn/mobile/gtin/xxx/cii1/00+SKU+生产日期&生产日期&到期日期`
+     - 纯数字格式：`00 + SKU(8位) + 生产日期(8位) # 生产日期 # 到期日期`
+     - 纯SKU格式：直接 SKU 字符
+
+2. **代码整合**：
+   - 将识别逻辑整合到 `v4.0/pages/new.php` 的 `handleScanResult` 函数中
+   - 修复了 API 路径问题：`/api/get_product` → `/api/get_product.php`
+   - 验证了 `/api/get_product.php` 接口存在并正常工作
+
+3. **服务器部署**：
+   - 成功上传 `new.php` 到服务器 `/www/wwwroot/pandian.dhmip.cn/pages/`
+   - 验证了远程文件包含识别逻辑（handleScanResult、get_product.php、artwork.starbucks.com.cn）
+   - 文件大小一致：24261 字节
+
+**关键技术**:
+- URL 解析：`new URL(qrCode)` 提取路径参数
+- 字符串处理：`split()`、`substring()` 提取 SKU 和日期
+- API 调用：`fetch('/api/get_product.php?sku=' + sku)` 查询商品信息
+- 日期格式转换：`20260222` → `2026-02-22`
+
+**下一步**: 需要测试实际扫码功能和数据库连接
+
+---
+
 ## 2026-02-22 保质期管理系统v4.0部署成功
 
 **部署完成时间**: 2026-02-22 19:50
