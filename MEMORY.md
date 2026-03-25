@@ -27,6 +27,60 @@ ln -s /mnt/webdav-fsnas /home/ubuntu/123pan
 
 ---
 
+## 2026-03-26 04:37 WebDAV服务器故障 ⚠️
+
+**事件时间**: 2026-03-26 04:37 GMT+8
+
+**问题**: 123盘WebDAV服务器无法连接
+- 症状: 所有访问 WebDAV 的操作都挂起（df、ls、备份上传）
+- 诊断: `curl -I http://fsnas.top:19798/dav` 连接超时
+- 影响: 备份服务完全中断
+
+**根本原因**: 外部问题 - WebDAV 服务器 (fsnas.top:19798) 无法访问
+
+**已采取的措施**:
+1. 卸载 WebDAV 挂载点（避免进程挂起）
+   ```bash
+   sudo kill -9 <davfs2_pid>
+   sudo umount -f /mnt/webdav-fsnas
+   ```
+2. 删除失效的软链接
+   ```bash
+   rm /home/ubuntu/123pan
+   ```
+3. 创建恢复脚本：`scripts/fix_webdav.sh`
+
+**恢复方案**（等待服务器恢复后执行）:
+```bash
+# 方法1：自动恢复脚本
+bash /home/ubuntu/.openclaw/workspace/scripts/fix_webdav.sh
+
+# 方法2：手动恢复
+mount /mnt/webdav-fsnas
+ln -s /mnt/webdav-fsnas /home/ubuntu/123pan
+
+# 方法3：使用备份脚本的 WebDAV 自愈功能
+bash /home/ubuntu/.openclaw/workspace/backup.sh --fix-webdav
+```
+
+**当前状态**:
+- ❌ WebDAV 已卸载
+- ❌ 软链接已删除
+- ⏸️ 备份服务暂停（等待服务器恢复）
+- ✅ 系统负载正常
+
+**后续行动**:
+- ⏳ 等待 WebDAV 服务器恢复（外部问题，无法从本地解决）
+- ✅ 恢复后运行 `fix_webdav.sh` 重建挂载和软链接
+- ✅ 验证备份功能是否正常
+
+**教训**:
+1. WebDAV 故障会级联影响整个系统（进程挂起）
+2. 需要更健壮的故障隔离机制（timeout、重试次数限制）
+3. 外部依赖（WebDAV）需要监控和自动恢复
+
+---
+
 ## 2026-02-22 保质期管理系统v4.0扫码识别功能实现
 
 **完成时间**: 2026-02-22 21:35
