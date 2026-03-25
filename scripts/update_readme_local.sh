@@ -30,12 +30,14 @@ check_webdav() {
 
 # 生成README内容
 generate_readme() {
-    cat << 'EOF'
+    local update_time=$(date '+%Y-%m-%d %H:%M:%S')
+    
+    cat << EOF
 # 123盘 WebDAV 服务器
 
 ## 📁 目录结构
 
-```
+\`\`\`
 /home/ubuntu/123pan/
 ├── 备份/           # 系统备份文件
 ├── 播客/           # 播客相关资源
@@ -45,49 +47,49 @@ generate_readme() {
 ├── 项目留存/       # 历史项目存档
 ├── 记忆恢复指南.md # 系统恢复文档
 └── readme.md       # 本文件
-```
+\`\`\`
 
 ## 🔄 自动备份
 
-- **备份脚本**: `/home/ubuntu/.openclaw/workspace/backup.sh`
-- **备份日志**: `/home/ubuntu/.openclaw/workspace/logs/backup_123pan.log`
+- **备份脚本**: \`/home/ubuntu/.openclaw/workspace/backup.sh\`
+- **备份日志**: \`/home/ubuntu/.openclaw/workspace/logs/backup_123pan.log\`
 - **备份频率**: 每日凌晨 3:00
 - **备份内容**: 工作区、配置文件、重要数据
 
 ## 🛠️ 维护命令
 
 ### 检查挂载状态
-```bash
+\`\`\`bash
 mount | grep 123pan
-```
+\`\`\`
 
 ### 重新挂载WebDAV
-```bash
+\`\`\`bash
 sudo umount /home/ubuntu/123pan
 sudo mount -a
-```
+\`\`\`
 
 ### 查看备份日志
-```bash
+\`\`\`bash
 tail -f /home/ubuntu/.openclaw/workspace/logs/backup_123pan.log
-```
+\`\`\`
 
 ### 手动备份
-```bash
+\`\`\`bash
 bash /home/ubuntu/.openclaw/workspace/backup.sh
-```
+\`\`\`
 
 ## 📊 系统信息
 
 - **服务器**: Ubuntu 22.04 LTS
 - **WebDAV服务**: 123盘 (https://www.123pan.com)
 - **挂载方式**: davfs2
-- **本地路径**: `/home/ubuntu/123pan`
-- **最后更新**: $(date '+%Y-%m-%d %H:%M:%S')
+- **本地路径**: \`/home/ubuntu/123pan\`
+- **最后更新**: ${update_time}
 
 ## ⚠️ 注意事项
 
-1. **不要删除**: `备份/` 目录中的文件是系统恢复的关键
+1. **不要删除**: \`备份/\` 目录中的文件是系统恢复的关键
 2. **定期检查**: 每月检查挂载状态和备份完整性
 3. **网络稳定**: WebDAV需要稳定的网络连接
 4. **权限管理**: 备份脚本需要root权限
@@ -146,4 +148,3 @@ main() {
 
 # 执行
 main
-EOF

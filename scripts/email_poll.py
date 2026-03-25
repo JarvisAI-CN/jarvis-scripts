@@ -7,7 +7,7 @@
 import sys
 import imaplib
 import email
-from email.header import decode_header
+from email.header import decode_header as email_decode_header
 import re
 from datetime import datetime, timedelta
 
@@ -31,7 +31,7 @@ def decode_header(header):
     if not header:
         return ""
     decoded = []
-    for part, encoding in decode_header(header):
+    for part, encoding in email_decode_header(header):
         if isinstance(part, bytes):
             try:
                 decoded.append(part.decode(encoding or "utf-8", errors="ignore"))
