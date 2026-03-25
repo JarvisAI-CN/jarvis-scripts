@@ -1,0 +1,12 @@
+OpenRouter API Key
+==================
+
+Key: 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
+
+Base URL: https://openrouter.ai/api/v1
+
+生成时间: 2026-03-25
+
+配置的模型:
+- deepseek/deepseek-r1-0528:free (DeepSeek R1, 64k, reasoning)
+- arcee-ai/trinity-large-preview:free (Trinity Large, 32k)
