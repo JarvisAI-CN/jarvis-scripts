@@ -4,7 +4,7 @@
 
 set -e
 
-WEBDAV_MOUNT="/home/ubuntu/123pan"
+WEBDAV_MOUNT="/mnt/webdav-fsnas"
 README_FILE="$WEBDAV_MOUNT/readme.md"
 LOG_FILE="/home/ubuntu/.openclaw/workspace/logs/readme_update.log"
 BACKUP_SCRIPT="/home/ubuntu/.openclaw/workspace/backup.sh"
@@ -38,14 +38,11 @@ generate_readme() {
 ## 📁 目录结构
 
 \`\`\`
-/home/ubuntu/123pan/
+/mnt/webdav-fsnas/
 ├── 备份/           # 系统备份文件
-├── 播客/           # 播客相关资源
-├── 博客/           # 博客文章和图片
-├── 共享资源/       # 共享文件
-├── 截图日志/       # 系统截图记录
-├── 项目留存/       # 历史项目存档
-├── 记忆恢复指南.md # 系统恢复文档
+├── archive/        # 归档文件
+├── test/           # 测试目录
+├── lost+found/     # 系统目录
 └── readme.md       # 本文件
 \`\`\`
 
@@ -60,13 +57,13 @@ generate_readme() {
 
 ### 检查挂载状态
 \`\`\`bash
-mount | grep 123pan
+mount | grep webdav
 \`\`\`
 
 ### 重新挂载WebDAV
 \`\`\`bash
-sudo umount /home/ubuntu/123pan
-sudo mount -a
+sudo umount /mnt/webdav-fsnas
+sudo mount /mnt/webdav-fsnas
 \`\`\`
 
 ### 查看备份日志
@@ -84,7 +81,7 @@ bash /home/ubuntu/.openclaw/workspace/backup.sh
 - **服务器**: Ubuntu 22.04 LTS
 - **WebDAV服务**: 123盘 (https://www.123pan.com)
 - **挂载方式**: davfs2
-- **本地路径**: \`/home/ubuntu/123pan\`
+- **本地路径**: \`/mnt/webdav-fsnas\`
 - **最后更新**: ${update_time}
 
 ## ⚠️ 注意事项
