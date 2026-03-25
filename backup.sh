@@ -7,7 +7,7 @@ BACKUP_NAME="workspace-backup-${BACKUP_DATE}.tar.gz"
 LOCAL_BACKUP="/tmp/${BACKUP_NAME}"
 LOG_FILE="/home/ubuntu/.openclaw/workspace/logs/backup_123pan.log"
 SOURCE_DIR="/home/ubuntu/.openclaw/workspace"
-REMOTE_TARGET="123pan:备份/$(date +%Y)/$(date +%m)月/$(date +%d)/"
+REMOTE_DIR="/mnt/webdav-fsnas/备份/$(date +%Y)/$(date +%m)月/$(date +%d)/"
 
 echo "===== 开始备份: $(date) =====" >> "$LOG_FILE"
 
@@ -26,9 +26,10 @@ fi
 BACKUP_SIZE=$(du -h "$LOCAL_BACKUP" | cut -f1)
 echo "本地备份完成: $BACKUP_SIZE" >> "$LOG_FILE"
 
-# 2. 上传至 123 盘 (使用 rclone copy，不会删除云端旧文件)
-echo "正在使用 rclone 上传至 123 盘..." >> "$LOG_FILE"
-rclone copy "$LOCAL_BACKUP" "$REMOTE_TARGET" --verbose >> "$LOG_FILE" 2>&1
+# 2. 上传至 123 盘 (直接复制到已挂载的 WebDAV 目录)
+echo "正在上传至 123 盘 (WebDAV挂载点: /mnt/webdav-fsnas)..." >> "$LOG_FILE"
+mkdir -p "$REMOTE_DIR"
+cp "$LOCAL_BACKUP" "$REMOTE_DIR" 2>&1 >> "$LOG_FILE"
 
 if [ $? -eq 0 ]; then
     echo "✅ 备份上传成功" >> "$LOG_FILE"
