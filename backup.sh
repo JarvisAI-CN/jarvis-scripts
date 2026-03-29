@@ -28,6 +28,15 @@ echo "本地备份完成: $BACKUP_SIZE" >> "$LOG_FILE"
 
 # 2. 上传至 123 盘 (直接复制到已挂载的 WebDAV 目录)
 echo "正在上传至 123 盘 (WebDAV挂载点: /mnt/webdav-fsnas)..." >> "$LOG_FILE"
+
+# 检查 WebDAV 是否已挂载
+if ! mount | grep -q '/mnt/webdav-fsnas'; then
+    echo "❌ 错误: WebDAV未挂载，无法上传到云端" >> "$LOG_FILE"
+    echo "提示: 请手动挂载: sudo mount /mnt/webdav-fsnas" >> "$LOG_FILE"
+    echo "本地备份已创建: $LOCAL_BACKUP ($BACKUP_SIZE)" >> "$LOG_FILE"
+    exit 1
+fi
+
 mkdir -p "$REMOTE_DIR"
 cp "$LOCAL_BACKUP" "$REMOTE_DIR" 2>&1 >> "$LOG_FILE"
 
