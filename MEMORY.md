@@ -27,6 +27,32 @@ ln -s /mnt/webdav-fsnas /home/ubuntu/123pan
 
 ---
 
+## 2026-03-30 02:00 WebDAV README更新成功 ✅
+
+**事件时间**: 2026-03-30 02:00:56 GMT+8
+**任务ID**: f777ec0b-a213-4245-a30a-68427f44e017
+**执行脚本**: `/home/ubuntu/.openclaw/workspace/scripts/update_readme_local.sh`
+
+**执行结果**:
+- ✅ README更新成功
+- 📦 已备份旧README（`readme.md.bak.20260330_020056`）
+- 📄 文件大小: 1633字节
+- 📁 WebDAV路径: `/mnt/webdav-fsnas/readme.md`
+- 🕐 最后更新: 2026-03-30 02:00:56
+
+**系统状态**:
+- WebDAV挂载: ✅ 正常（`/mnt/webdav-fsnas`）
+- 定时任务: ✅ 每小时自动执行
+- 备份文件: 74个历史备份文件（保留3天+）
+
+**任务说明**:
+- 每小时自动更新README文件
+- 包含系统信息、维护命令、注意事项
+- 自动备份旧版本（时间戳命名）
+- 记录日志到: `/home/ubuntu/.openclaw/workspace/logs/readme_update.log`
+
+---
+
 ## 2026-03-26 04:37 WebDAV服务器故障 ⚠️
 
 **事件时间**: 2026-03-26 04:37 GMT+8
