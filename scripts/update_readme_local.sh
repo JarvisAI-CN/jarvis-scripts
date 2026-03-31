@@ -133,9 +133,9 @@ main() {
     TEMP_README=$(mktemp)
     generate_readme > "$TEMP_README"
 
-    # 备份旧README（如果存在且可读）
-    if [ -r "$README_FILE" ]; then
-        cp "$README_FILE" "${README_FILE}.bak.$(date +%Y%m%d_%H%M%S)" 2>/dev/null || true
+    # 备份旧README（如果存在）
+    if [ -f "$README_FILE" ]; then
+        sudo cp "$README_FILE" "${README_FILE}.bak.$(date +%Y%m%d_%H%M%S)" 2>/dev/null || true
         log "📦 已备份旧README"
     fi
 
@@ -159,7 +159,7 @@ main() {
 
     # 显示文件大小（使用sudo）
     if [ -f "$README_FILE" ]; then
-        SIZE=$(sudo wc -c < "$README_FILE" 2>/dev/null || echo "unknown")
+        SIZE=$(sudo stat -c%s "$README_FILE" 2>/dev/null || echo "unknown")
         log "📄 README大小: $SIZE 字节"
     fi
 
