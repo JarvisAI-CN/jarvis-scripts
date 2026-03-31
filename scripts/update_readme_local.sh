@@ -157,9 +157,9 @@ main() {
         exit 1
     fi
 
-    # 显示文件大小
+    # 显示文件大小（使用sudo）
     if [ -f "$README_FILE" ]; then
-        SIZE=$(sudo wc -c < "$README_FILE" 2>/dev/null || stat -c%s "$README_FILE" 2>/dev/null || echo "unknown")
+        SIZE=$(sudo wc -c < "$README_FILE" 2>/dev/null || echo "unknown")
         log "📄 README大小: $SIZE 字节"
     fi
 
