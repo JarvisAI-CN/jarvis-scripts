@@ -4,7 +4,7 @@
 
 set -e
 
-WEBDAV_MOUNT="/mnt/webdav-fsnas"
+WEBDAV_MOUNT="/mnt/123pan-webdav"
 README_FILE="$WEBDAV_MOUNT/readme.md"
 LOG_FILE="/home/ubuntu/.openclaw/workspace/logs/readme_update.log"
 BACKUP_SCRIPT="/home/ubuntu/.openclaw/workspace/backup.sh"
@@ -19,31 +19,46 @@ log() {
 
 # 检查WebDAV是否可访问
 check_webdav() {
-    if ! ls "$WEBDAV_MOUNT" &>/dev/null; then
-        log "❌ WebDAV挂载点不可访问，尝试重新挂载..."
-        sudo umount "$WEBDAV_MOUNT" 2>/dev/null || true
-        sleep 2
-        sudo mount -a
-        sleep 2
+    # 检查挂载状态
+    if ! mount | grep -q "$WEBDAV_MOUNT"; then
+        log "⚠️  WebDAV未挂载，尝试挂载..."
+        sudo mkdir -p "$WEBDAV_MOUNT"
+        sudo mount -t davfs https://webdav.123pan.cn/webdav "$WEBDAV_MOUNT" 2>/dev/null || {
+            log "❌ WebDAV挂载失败"
+            return 1
+        }
+        sleep 3
     fi
+
+    # 检查是否可访问
+    if ! ls "$WEBDAV_MOUNT" &>/dev/null; then
+        log "❌ WebDAV挂载点不可访问"
+        return 1
+    fi
+
+    return 0
 }
 
 # 生成README内容
 generate_readme() {
     local update_time=$(date '+%Y-%m-%d %H:%M:%S')
-    
+
     cat << EOF
 # 123盘 WebDAV 服务器
 
 ## 📁 目录结构
 
 \`\`\`
-/mnt/webdav-fsnas/
+/mnt/123pan-webdav/
 ├── 备份/           # 系统备份文件
-├── archive/        # 归档文件
-├── test/           # 测试目录
-├── lost+found/     # 系统目录
-└── readme.md       # 本文件
+├── 博客/           # 博客文章
+├── 播客/           # 播客资源
+├── 共享资源/       # 共享文件
+├── 项目留存/       # 项目归档
+├── 截图日志/       # 系统截图
+├── 记忆恢复指南.md # 系统恢复文档
+├── readme.md       # 本文件
+└── lost+found/     # 系统目录
 \`\`\`
 
 ## 🔄 自动备份
@@ -57,13 +72,13 @@ generate_readme() {
 
 ### 检查挂载状态
 \`\`\`bash
-mount | grep webdav
+mount | grep 123pan
 \`\`\`
 
 ### 重新挂载WebDAV
 \`\`\`bash
-sudo umount /mnt/webdav-fsnas
-sudo mount /mnt/webdav-fsnas
+sudo umount /mnt/123pan-webdav
+sudo mount -t davfs https://webdav.123pan.cn/webdav /mnt/123pan-webdav
 \`\`\`
 
 ### 查看备份日志
@@ -80,8 +95,8 @@ bash /home/ubuntu/.openclaw/workspace/backup.sh
 
 - **服务器**: Ubuntu 22.04 LTS
 - **WebDAV服务**: 123盘 (https://www.123pan.com)
-- **挂载方式**: davfs2
-- **本地路径**: \`/mnt/webdav-fsnas\`
+- **WebDAV URL**: https://webdav.123pan.cn/webdav
+- **本地路径**: \`/mnt/123pan-webdav\`
 - **最后更新**: ${update_time}
 
 ## ⚠️ 注意事项
@@ -109,7 +124,10 @@ main() {
     log "🚀 开始更新README..."
 
     # 检查WebDAV
-    check_webdav
+    if ! check_webdav; then
+        log "⚠️  WebDAV不可用，跳过更新"
+        exit 0
+    fi
 
     # 生成新README
     TEMP_README=$(mktemp)
