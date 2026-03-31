@@ -139,7 +139,12 @@ main() {
         log "📦 已备份旧README"
     fi
 
-    # 写入新README（尝试普通用户，失败则用sudo）
+    # 写入新README（WebDAV需要先删除再覆盖）
+    if [ -f "$README_FILE" ]; then
+        log "🗑️  删除旧README..."
+        sudo rm -f "$README_FILE" 2>/dev/null || true
+    fi
+
     if cp "$TEMP_README" "$README_FILE" 2>/dev/null; then
         log "✅ README更新成功"
         rm -f "$TEMP_README"
@@ -154,7 +159,7 @@ main() {
 
     # 显示文件大小
     if [ -f "$README_FILE" ]; then
-        SIZE=$(wc -c < "$README_FILE")
+        SIZE=$(sudo wc -c < "$README_FILE" 2>/dev/null || stat -c%s "$README_FILE" 2>/dev/null || echo "unknown")
         log "📄 README大小: $SIZE 字节"
     fi
 
