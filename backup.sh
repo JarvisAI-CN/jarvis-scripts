@@ -7,7 +7,7 @@ BACKUP_NAME="workspace-backup-${BACKUP_DATE}.tar.gz"
 LOCAL_BACKUP="/tmp/${BACKUP_NAME}"
 LOG_FILE="/home/ubuntu/.openclaw/workspace/logs/backup_123pan.log"
 SOURCE_DIR="/home/ubuntu/.openclaw/workspace"
-REMOTE_DIR="/mnt/webdav-fsnas/备份/$(date +%Y)/$(date +%m)月/$(date +%d)/"
+REMOTE_DIR="/home/ubuntu/123pan/备份/$(date +%Y)/$(date +%m)月/$(date +%d)/"
 
 echo "===== 开始备份: $(date) =====" >> "$LOG_FILE"
 
@@ -27,12 +27,12 @@ BACKUP_SIZE=$(du -h "$LOCAL_BACKUP" | cut -f1)
 echo "本地备份完成: $BACKUP_SIZE" >> "$LOG_FILE"
 
 # 2. 上传至 123 盘 (直接复制到已挂载的 WebDAV 目录)
-echo "正在上传至 123 盘 (WebDAV挂载点: /mnt/webdav-fsnas)..." >> "$LOG_FILE"
+echo "正在上传至 123 盘 (WebDAV挂载点: /mnt/123pan-webdav)..." >> "$LOG_FILE"
 
 # 检查 WebDAV 是否已挂载
-if ! mount | grep -q '/mnt/webdav-fsnas'; then
+if ! mount | grep -q '/mnt/123pan-webdav'; then
     echo "❌ 错误: WebDAV未挂载，无法上传到云端" >> "$LOG_FILE"
-    echo "提示: 请手动挂载: sudo mount /mnt/webdav-fsnas" >> "$LOG_FILE"
+    echo "提示: 请手动挂载: sudo mount /mnt/123pan-webdav" >> "$LOG_FILE"
     echo "本地备份已创建: $LOCAL_BACKUP ($BACKUP_SIZE)" >> "$LOG_FILE"
     exit 1
 fi
