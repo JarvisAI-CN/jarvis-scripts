@@ -14,6 +14,7 @@ SCRIPTS_DIR = Path(__file__).parent
 sys.path.insert(0, str(SCRIPTS_DIR))
 
 # 导入todo_to_tasklist模块
+# ruff: noqa: E402 - 需要在设置 sys.path 后导入
 from todo_to_tasklist import TaskListGenerator, TASK_LIST_FILE, TODO_FILE
 
 
@@ -29,26 +30,22 @@ def update_todo_timestamp():
 
     # 更新时间戳
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S GMT+8")
-    updated_content = content.replace(
-        f"**更新时间**: ",
-        f"**更新时间**: {now}\n"
-    )
+    updated_content = content.replace("**更新时间**: ", f"**更新时间**: {now}\n")
 
     # 如果时间戳行存在，替换它
     import re
-    timestamp_pattern = r'\*\*更新时间\*\*[:\s].+?GMT\+8'
+
+    timestamp_pattern = r"\*\*更新时间\*\*[:\s].+?GMT\+8"
     if re.search(timestamp_pattern, content):
         updated_content = re.sub(
-            timestamp_pattern,
-            f"**更新时间**: {now} GMT+8",
-            content
+            timestamp_pattern, f"**更新时间**: {now} GMT+8", content
         )
         with open(TODO_FILE, "w", encoding="utf-8") as f:
             f.write(updated_content)
         print(f"✅ 更新时间戳: {now}")
         return True
     else:
-        print(f"⚠️ 未找到时间戳行，跳过更新")
+        print("⚠️ 未找到时间戳行，跳过更新")
         return False
 
 
