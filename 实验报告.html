@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Python上机实验报告</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', 'SimSun', Arial, sans-serif;
+            line-height: 1.6;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            border-radius: 10px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 28px;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 15px;
+        }
+
+        h2 {
+            color: #667eea;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            font-size: 22px;
+            border-left: 4px solid #667eea;
+            padding-left: 10px;
+        }
+
+        h3 {
+            color: #555;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+
+        .info-table {
+            width: 100%;
+            margin-bottom: 30px;
+            border-collapse: collapse;
+        }
+
+        .info-table td {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .info-table td:first-child {
+            font-weight: bold;
+            background: #f8f9fa;
+            width: 120px;
+        }
+
+        pre {
+            background: #f4f4f4;
+            border: 1px solid #ddd;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin: 15px 0;
+            overflow-x: auto;
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 14px;
+        }
+
+        .result-box {
+            background: #f0f7ff;
+            border: 1px solid #b3d9ff;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+
+        .result-box::before {
+            content: "运行结果";
+            font-weight: bold;
+            color: #2196F3;
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+
+        table th,
+        table td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+
+        table th {
+            background: #667eea;
+            color: white;
+        }
+
+        table tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+
+        .success {
+            color: #4CAF50;
+            font-weight: bold;
+        }
+
+        .error {
+            color: #f44336;
+            font-weight: bold;
+        }
+
+        .summary-box {
+            background: #fff9e6;
+            border: 1px solid #ffe066;
+            border-left: 4px solid #ffc107;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+
+        .footer {
+            margin-top: 50px;
+            padding-top: 20px;
+            border-top: 2px solid #ddd;
+            text-align: center;
+            color: #666;
+        }
+
+        .grade-box {
+            border: 2px dashed #999;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: center;
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Python课程上机实验报告（一）</h1>
+
+        <table class="info-table">
+            <tr><td>学院</td><td>信息学院</td></tr>
+            <tr><td>班级</td><td>数据科学与大数据技术2301班</td></tr>
+            <tr><td>学号</td><td>20232107111</td></tr>
+            <tr><td>姓名</td><td>李文馨</td></tr>
+            <tr><td>实验名称</td><td>熟悉Python编程环境和简单的Python程序</td></tr>
+            <tr><td>实验地点</td><td>13号机 302机房</td></tr>
+            <tr><td>指导教师</td><td>王芳</td></tr>
+            <tr><td>实验日期</td><td>2024年4月8日</td></tr>
+        </table>
+
+        <h2>一、实验目的</h2>
+        <ol>
+            <li>掌握Python环境的搭建与配置</li>
+            <li>掌握Python程序的编辑、运行和调试方法</li>
+            <li>掌握Python基本语法和编程规范</li>
+            <li>熟练掌握Python中的输入输出函数</li>
+            <li>熟练掌握Python中的运算符和表达式</li>
+        </ol>
+
+        <h2>二、实验内容</h2>
+        <p>根据选题指南，选择以下3个题目进行编程实现：</p>
+        <ol>
+            <li><strong>计算圆的周长和面积</strong>：输入一个圆的半径，计算并输出圆的周长和面积</li>
+            <li><strong>判断三位水仙花数</strong>：输入一个三位数，判断其是否为水仙花数</li>
+            <li><strong>判断闰年</strong>：输入一个年份，判断其是否为闰年</li>
+        </ol>
+
+        <h2>三、程序代码与运行结果</h2>
+
+        <h3>题目1：计算圆的周长和面积</h3>
+        <p><strong>程序代码：</strong></p>
+        <pre>import math
+
+radius = float(input("请输入圆的半径："))
+circumference = 2 * math.pi * radius
+area = math.pi * radius ** 2
+print(f"周长 = {circumference:.2f}")
+print(f"面积 = {area:.2f}")</pre>
+
+        <div class="result-box">
+            <strong>测试输入：</strong>半径 = 5.0<br>
+            <strong>输出结果：</strong><br>
+            周长 = 31.42<br>
+            面积 = 78.54
+        </div>
+
+        <h3>题目2：判断三位水仙花数</h3>
+        <p><strong>程序代码：</strong></p>
+        <pre>num = int(input("请输入一个三位数："))
+hundreds = num // 100
+tens = (num // 10) % 10
+units = num % 10
+sum_of_cubes = hundreds ** 3 + tens ** 3 + units ** 3
+
+if num == sum_of_cubes:
+    print(f"{num} 是水仙花数！")
+else:
+    print(f"{num} 不是水仙花数！")</pre>
+
+        <div class="result-box">
+            <strong>测试结果：</strong><br>
+            <table>
+                <tr><th>三位数</th><th>判断结果</th></tr>
+                <tr><td>153</td><td><span class="success">✓ 水仙花数</span></td></tr>
+                <tr><td>370</td><td><span class="success">✓ 水仙花数</span></td></tr>
+                <tr><td>371</td><td><span class="success">✓ 水仙花数</span></td></tr>
+                <tr><td>407</td><td><span class="success">✓ 水仙花数</span></td></tr>
+                <tr><td>123</td><td><span class="error">✗ 非水仙花数</span></td></tr>
+                <tr><td>456</td><td><span class="error">✗ 非水仙花数</span></td></tr>
+            </table>
+        </div>
+
+        <h3>题目3：判断闰年</h3>
+        <p><strong>程序代码：</strong></p>
+        <pre>year = int(input("请输入年份："))
+is_leap = (year % 4 == 0 and year % 100 != 0) or (year % 400 == 0)
+
+if is_leap:
+    print(f"{year} 是闰年")
+else:
+    print(f"{year} 不是闰年")</pre>
+
+        <div class="result-box">
+            <strong>测试结果：</strong><br>
+            <table>
+                <tr><th>年份</th><th>判断结果</th><th>说明</th></tr>
+                <tr><td>2000</td><td><span class="success">✓ 闰年</span></td><td>能被400整除</td></tr>
+                <tr><td>2004</td><td><span class="success">✓ 闰年</span></td><td>能被4整除且不能被100整除</td></tr>
+                <tr><td>2023</td><td><span class="error">✗ 平年</span></td><td>不能被4整除</td></tr>
+                <tr><td>2024</td><td><span class="success">✓ 闰年</span></td><td>能被4整除且不能被100整除</td></tr>
+                <tr><td>1900</td><td><span class="error">✗ 平年</span></td><td>能被100整除但不能被400整除</td></tr>
+                <tr><td>2100</td><td><span class="error">✗ 平年</span></td><td>能被100整除但不能被400整除</td></tr>
+            </table>
+        </div>
+
+        <h2>四、实验总结</h2>
+
+        <div class="summary-box">
+            <h3>实验收获：</h3>
+            <ol>
+                <li>掌握了Python基础语法：变量、数据类型、运算符、表达式</li>
+                <li>学会了输入输出操作：<code>input()</code> 和 <code>print()</code> 函数</li>
+                <li>掌握了条件判断：<code>if-else</code> 语句的使用</li>
+                <li>使用了数学模块：<code>math.pi</code> 和幂运算 <code>**</code></li>
+                <li>学会了异常处理：<code>try-except</code> 捕获输入错误</li>
+            </ol>
+        </div>
+
+        <div class="summary-box">
+            <h3>技术要点：</h3>
+            <ol>
+                <li><strong>整数除法与取余：</strong><code>//</code> 和 <code>%</code> 运算符</li>
+                <li><strong>逻辑表达式：</strong><code>and</code>、<code>or</code> 的组合使用</li>
+                <li><strong>格式化输出：</strong>f-string 和 <code>.2f</code> 保留小数</li>
+            </ol>
+        </div>
+
+        <div class="grade-box">
+            <strong>实验成绩：__________</strong><br><br>
+            <strong>指导教师签字：__________</strong>
+        </div>
+
+        <div class="footer">
+            <p>日期：2024年4月8日</p>
+        </div>
+    </div>
+</body>
+</html>
