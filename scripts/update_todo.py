@@ -29,10 +29,7 @@ def update_todo_timestamp():
         content = f.read()
 
     # 更新时间戳
-    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S GMT+8")
-    updated_content = content.replace("**更新时间**: ", f"**更新时间**: {now}\n")
-
-    # 如果时间戳行存在，替换它
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     import re
 
     timestamp_pattern = r"\*\*更新时间\*\*[:\s].+?GMT\+8"
@@ -42,7 +39,7 @@ def update_todo_timestamp():
         )
         with open(TODO_FILE, "w", encoding="utf-8") as f:
             f.write(updated_content)
-        print(f"✅ 更新时间戳: {now}")
+        print(f"✅ 更新时间戳: {now} GMT+8")
         return True
     else:
         print("⚠️ 未找到时间戳行，跳过更新")
