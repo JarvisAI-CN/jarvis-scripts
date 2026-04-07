@@ -43,7 +43,7 @@ Add whatever helps you do your job. This is your cheat sheet.
 
 ## 快速参考
 ### 网络服务
-- 123盘WebDAV: /home/ubuntu/123pan
+- 123盘WebDAV: /mnt/123pan-webdav (⚠️ 注意：实际挂载点，非 /home/ubuntu/123pan)
 - VNC服务器: localhost:5901 (密码见PASSWORDS.md)
 - 内网IP: 10.7.0.5
 - 公网IP: 150.109.204.23 (用于外部访问)
@@ -53,7 +53,7 @@ Add whatever helps you do your job. This is your cheat sheet.
 - 工作区: /home/ubuntu/.openclaw/workspace
 - 备份脚本: /home/ubuntu/.openclaw/workspace/backup.sh
 - 备份日志: /home/ubuntu/.openclaw/workspace/logs/backup_123pan.log
-- 123盘备份: /home/ubuntu/123pan/备份/
+- 123盘备份: /mnt/123pan-webdav/备份/ (⚠️ 实际挂载点)
 
 ### 知识管理工具
 - **Obsidian**: 我的整个工作区是一个Obsidian vault
