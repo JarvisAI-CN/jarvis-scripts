@@ -1,5 +1,5 @@
 #!/bin/bash
-# 贾维斯的备份脚本 - Rclone 优化版 v2.1
+# 贾维斯的备份脚本 - Rclone 直接上传版 v3.0
 # 策略：云端永久保留所有历史，本地保留最近 3 份压缩包
 
 BACKUP_DATE=$(date +%Y%m%d_%H%M%S)
@@ -7,7 +7,7 @@ BACKUP_NAME="workspace-backup-${BACKUP_DATE}.tar.gz"
 LOCAL_BACKUP="/tmp/${BACKUP_NAME}"
 LOG_FILE="/home/ubuntu/.openclaw/workspace/logs/backup_123pan.log"
 SOURCE_DIR="/home/ubuntu/.openclaw/workspace"
-REMOTE_DIR="/home/ubuntu/123pan/备份/$(date +%Y)/$(date +%m)月/$(date +%d)/"
+REMOTE_PATH="123pan-new:备份/$(date +%Y)/$(date +%m)月/$(date +%d)/${BACKUP_NAME}"
 
 echo "===== 开始备份: $(date) =====" >> "$LOG_FILE"
 
@@ -26,21 +26,13 @@ fi
 BACKUP_SIZE=$(du -h "$LOCAL_BACKUP" | cut -f1)
 echo "本地备份完成: $BACKUP_SIZE" >> "$LOG_FILE"
 
-# 2. 上传至 123 盘 (直接复制到已挂载的 WebDAV 目录)
-echo "正在上传至 123 盘 (WebDAV挂载点: /mnt/123pan-webdav)..." >> "$LOG_FILE"
+# 2. 上传至 123 盘 (使用 rclone 直接上传)
+echo "正在上传至 123 盘 (rclone直接上传)..." >> "$LOG_FILE"
+echo "目标路径: $REMOTE_PATH" >> "$LOG_FILE"
 
-# 检查 WebDAV 是否已挂载
-if ! mount | grep -q '/mnt/123pan-webdav'; then
-    echo "❌ 错误: WebDAV未挂载，无法上传到云端" >> "$LOG_FILE"
-    echo "提示: 请手动挂载: sudo mount /mnt/123pan-webdav" >> "$LOG_FILE"
-    echo "本地备份已创建: $LOCAL_BACKUP ($BACKUP_SIZE)" >> "$LOG_FILE"
-    exit 1
-fi
+rclone copyto "$LOCAL_BACKUP" "$REMOTE_PATH" --progress 2>&1 | tee -a "$LOG_FILE"
 
-mkdir -p "$REMOTE_DIR"
-cp "$LOCAL_BACKUP" "$REMOTE_DIR" 2>&1 >> "$LOG_FILE"
-
-if [ $? -eq 0 ]; then
+if [ ${PIPESTATUS[0]} -eq 0 ]; then
     echo "✅ 备份上传成功" >> "$LOG_FILE"
     
     # 3. 维护本地留存策略：仅保留最近 3 份
