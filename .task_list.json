@@ -1,9 +1,9 @@
 {
   "version": "2.0",
-  "last_updated": "2026-03-25T10:51:25.234381",
+  "last_updated": "2026-04-11T17:19:56.660087",
   "statistics": {
-    "total": 12,
-    "pending": 8,
+    "total": 13,
+    "pending": 9,
     "in_progress": 1,
     "done": 3,
     "failed": 0
@@ -335,6 +335,25 @@
       "metadata": {
         "status": "in_progress",
         "progress": 0
+      }
+    },
+    {
+      "id": "TASK-2026-04-11-013",
+      "created_at": "2026-04-11T17:19:56.660066",
+      "assigned_to": "GLM-4.7",
+      "subtasks": [],
+      "logs": [],
+      "title": "🎯 当前任务",
+      "description": "WebDAV 监控",
+      "source": "/home/ubuntu/.openclaw/workspace/TODO.md",
+      "type": "feature",
+      "priority": "high",
+      "quadrant": "urgent_important",
+      "status": "pending",
+      "metadata": {
+        "description": "WebDAV 监控",
+        "status": "in_progress",
+        "progress": 50
       }
     }
   ]
